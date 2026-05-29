@@ -1,0 +1,31 @@
+# Build artifacts
+/_build/
+/cover/
+/deps/
+/doc/
+/.fetch
+erl_crash.dump
+*.ez
+
+# Dependency lock (committed for libraries to ensure reproducible CI)
+# mix.lock is committed.
+
+# Local development
+/.elixir_ls/
+/tmp/
+.DS_Store
+
+# Tooling
+/priv/static/
+*.beam
+
+# Editor
+.vscode/
+*.swp
+*.swo
+
+# Postgres unix socket (workspace dev only)
+/postgres/
+
+# Generated docs (built by CI for gh-pages)
+/doc/

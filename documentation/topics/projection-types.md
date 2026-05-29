@@ -1,0 +1,3 @@
+# projection-types
+
+> **Status:** scaffold.
