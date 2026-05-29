@@ -201,9 +201,9 @@ defmodule AshEvents.Projections.MixProject do
       ],
       credo: "credo --strict",
       "spark.formatter":
-        "spark.formatter --extensions AshEvents.Projections.Projector,AshEvents.Projections.ProjectionResource,AshEvents.Projections.AttachProjection",
+        "spark.formatter --extensions AshEvents.Projections.ProjectionResource,AshEvents.Projections.AttachProjection",
       "spark.cheat_sheets":
-        "spark.cheat_sheets --extensions AshEvents.Projections.Projector,AshEvents.Projections.ProjectionResource,AshEvents.Projections.AttachProjection"
+        "spark.cheat_sheets --extensions AshEvents.Projections.ProjectionResource,AshEvents.Projections.AttachProjection"
     ]
   end
 end
