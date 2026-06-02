@@ -15,7 +15,7 @@ defmodule AshEvents.Projections.Projector do
   *before* loading the grain row, so if the handler returns `:skip` no DB read
   happens at all. Use for atomic operations like counters and max values.
 
-      project MyApp.Notes.Note, :create, fn event ->
+      project MyApp.Article, :create, fn event ->
         [{:increment, :note_count, 1}]
       end
 
@@ -23,13 +23,13 @@ defmodule AshEvents.Projections.Projector do
   *before* calling the handler, passing it as `current`. Use when you need the
   existing state to derive the new value — e.g. running averages, ratios.
 
-      project MyApp.Visits.Visit, :complete, fn event, current ->
-        dur = event.data["duration_minutes"]
-        n = current.visits_count + 1
-        new_avg = (current.avg_visit_duration * current.visits_count + dur) / n
+      project MyApp.Order, :complete, fn event, current ->
+        dur = event.data["fulfillment_minutes"]
+        n = current.orders_count + 1
+        new_avg = (current.avg_fulfillment * current.orders_count + dur) / n
         [
-          {:increment, :visits_count, 1},
-          {:set, :avg_visit_duration, new_avg}
+          {:increment, :orders_count, 1},
+          {:set, :avg_fulfillment, new_avg}
         ]
       end
 
