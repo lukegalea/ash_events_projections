@@ -63,6 +63,8 @@ defmodule AshEvents.Projections.Server do
 
   @impl true
   def init(projector) do
+    # Observable in :observer and process listings (OTP 26+ process labels).
+    :proc_lib.set_label({:projector, projector.__projector_name__()})
     Registry.initialize(projector.__projector_name__())
     send(self(), :process)
     {:ok, %{projector: projector, status: :running}}
