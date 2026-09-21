@@ -104,6 +104,7 @@ defmodule AshEvents.Projections.TimeTravel do
         user_id: e.user_id,
         occurred_at: e.occurred_at,
         metadata: e.metadata,
+        data: e.data,
         resource: e.resource,
         action: e.action,
         action_type: e.action_type
@@ -123,6 +124,7 @@ defmodule AshEvents.Projections.TimeTravel do
       user_id: uuid_to_string(row.user_id),
       occurred_at: row.occurred_at,
       metadata: row.metadata || %{},
+      data: row.data || %{},
       resource: to_atom(row.resource),
       action: to_atom(row.action),
       action_type: to_atom(row.action_type)
