@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Luke Galea
+
+SPDX-License-Identifier: MIT
+-->
+
 # Usage rules for ash_events_projections
 
 Concise rules for AI-assisted coding inside an app that depends on
@@ -94,3 +100,26 @@ Mix tasks:
   resetting without truncating causes increment-style ops to double-count.
 - Do not embed business logic in the projection target resource. The projector
   is the rule. The resource is just the shape.
+
+## Iron laws
+
+Changes to this package are checked against the 26 Iron Laws (phxagents.dev/iron-laws;
+background in `ash_enterprise/docs/research/phxagents-iron-laws-and-codicil.md`).
+`ash_agent_tools` ships a deterministic judge for them — `mix ash_agent.laws` reports
+violations only, tiered definite/likely/review — wherever that dev tool is installed
+(it is part of the `ash_enterprise` program, not a dependency of this package).
+
+- Judge a change before claiming it done: `git diff main | mix ash_agent.laws - --diff`,
+  and read the hits' context before acting — the judge is grep-tier, not a parser.
+- The Oban laws are this package's home ground: #07 (jobs are idempotent and run
+  at-least-once — the projector's advisory locks and replay checks exist for this),
+  #08 (Oban args come back string-keyed through JSON), #09 (store IDs, not structs,
+  so a retry re-reads fresh state).
+- The laws with teeth inside a library generally: #10 (never `String.to_atom` on
+  names read from the event log — see "Things to NEVER do" above), #14 (the
+  projector servers and leader monitor belong in the supervision tree, never bare
+  `Task.start`), #22 (verify before claiming done — compile, test, credo, docs,
+  then say so), #26 (comments carry durable facts; the narrative belongs to the
+  commit).
+- The LiveView-facing laws govern the host applications wiring projections into
+  UIs, not this package.
