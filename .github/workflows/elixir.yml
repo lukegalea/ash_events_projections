@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Luke Galea
+#
+# SPDX-License-Identifier: MIT
+
 name: CI
 
 on:
@@ -75,3 +79,15 @@ jobs:
           elixir-version: "1.17.3"
       - run: mix deps.get
       - run: mix docs
+
+  audit:
+    name: mix deps.audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: "27.0"
+          elixir-version: "1.17.3"
+      - run: mix deps.get
+      - run: mix deps.audit
