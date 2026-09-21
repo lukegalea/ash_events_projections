@@ -47,8 +47,9 @@ defmodule AshEvents.Projections.TimeTravel do
 
   def state_at(projector_module, grain_key, %NaiveDateTime{} = timestamp) do
     grain_fn = projector_module.__grain__()
+    grain_fields = projector_module.__projection_resource__().__projection_grain_fields__()
 
-    target_key = normalize_key(grain_key)
+    target_key = normalize_key(grain_key, grain_fields)
 
     Config.event_table()
     |> select_columns()
@@ -58,7 +59,7 @@ defmodule AshEvents.Projections.TimeTravel do
     |> Enum.filter(fn event ->
       case grain_fn.(event) do
         nil -> false
-        key -> normalize_key(key) == target_key
+        key -> normalize_key(key, grain_fields) == target_key
       end
     end)
     |> Enum.reduce(%{}, fn event, acc ->
@@ -94,7 +95,12 @@ defmodule AshEvents.Projections.TimeTravel do
 
   defp max_value(current, v), do: if(current >= v, do: current, else: v)
 
-  defp normalize_key(key) when is_map(key), do: key
+  # Map grains are compared as-is; scalar grains (single-field projections)
+  # are wrapped in a one-field map so both the requested and the event-derived
+  # key land in the same shape. Mirrors Verify.grain_key_for_acc/2.
+  defp normalize_key(key, _) when is_map(key), do: key
+
+  defp normalize_key(scalar, [field]), do: %{field => scalar}
 
   defp select_columns(table) do
     from(e in table,
