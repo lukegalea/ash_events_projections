@@ -21,8 +21,10 @@ defmodule AshEvents.Projections.Events.RecordIdAdvisoryLockKeyGenerator do
 
   use AshEvents.AdvisoryLockKeyGenerator
 
+  alias Ash.Resource.Info
+
   def generate_key!(changeset, default_integer) do
-    case Ash.Resource.Info.multitenancy_strategy(changeset.resource) do
+    case Info.multitenancy_strategy(changeset.resource) do
       nil ->
         default_integer
 

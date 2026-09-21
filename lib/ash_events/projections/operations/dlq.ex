@@ -22,8 +22,7 @@ defmodule AshEvents.Projections.Operations.Dlq do
   See `backend/docs/runbooks/05-dlq-inspect-and-replay.md`.
   """
 
-  alias AshEvents.Projections.{DeadLetter, Server}
-  alias AshEvents.Projections.Config
+  alias AshEvents.Projections.{Config, DeadLetter, Server}
 
   import Ecto.Query
 
@@ -60,26 +59,34 @@ defmodule AshEvents.Projections.Operations.Dlq do
     rows = fetch_replay_candidates(name, opts)
 
     Enum.reduce(rows, %{replayed: 0, failed: 0, skipped: 0}, fn dlq, acc ->
-      case load_event(dlq.event_id) do
-        nil ->
-          DeadLetter.mark_purged(dlq)
-          %{acc | skipped: acc.skipped + 1}
-
-        event ->
-          case attempt_replay(projector_module, event) do
-            :ok ->
-              DeadLetter.mark_replayed(dlq)
-              %{acc | replayed: acc.replayed + 1}
-
-            {:error, reason} ->
-              Logger.warning(
-                "[Projections.Dlq] replay of event ##{dlq.event_id} for #{name} still failing: #{inspect(reason)}"
-              )
-
-              %{acc | failed: acc.failed + 1}
-          end
-      end
+      replay_row(projector_module, dlq, name, acc)
     end)
+  end
+
+  defp replay_row(projector_module, dlq, name, acc) do
+    case load_event(dlq.event_id) do
+      nil ->
+        DeadLetter.mark_purged(dlq)
+        %{acc | skipped: acc.skipped + 1}
+
+      event ->
+        settle_replay(projector_module, dlq, event, name, acc)
+    end
+  end
+
+  defp settle_replay(projector_module, dlq, event, name, acc) do
+    case attempt_replay(projector_module, event) do
+      :ok ->
+        DeadLetter.mark_replayed(dlq)
+        %{acc | replayed: acc.replayed + 1}
+
+      {:error, reason} ->
+        Logger.warning(
+          "[Projections.Dlq] replay of event ##{dlq.event_id} for #{name} still failing: #{inspect(reason)}"
+        )
+
+        %{acc | failed: acc.failed + 1}
+    end
   end
 
   @doc "Marks DLQ rows as `:purged` (kept for audit). Pass `:hard_delete?: true` to remove them."
@@ -111,7 +118,7 @@ defmodule AshEvents.Projections.Operations.Dlq do
 
   defp load_event(id) do
     row =
-      from(e in AshEvents.Projections.Config.event_table(),
+      from(e in Config.event_table(),
         select: %{
           id: e.id,
           practice_id: e.practice_id,
@@ -131,34 +138,7 @@ defmodule AshEvents.Projections.Operations.Dlq do
 
   defp attempt_replay(projector_module, event) do
     Config.repo().transaction(fn ->
-      grain_fn = projector_module.__grain__()
-      resource = projector_module.__projection_resource__()
-
-      case grain_fn.(event) do
-        nil ->
-          :ok
-
-        grain_key ->
-          row = upsert_grain(resource, grain_key)
-
-          if projector_module.needs_current_state?(event) do
-            case projector_module.handle_event(event, row) do
-              {:ok, ops} when ops != [] ->
-                Ash.update!(row, %{ops: ops}, action: :apply_projection_ops, authorize?: false)
-
-              _ ->
-                :ok
-            end
-          else
-            case projector_module.handle_event(event) do
-              {:ok, ops} when ops != [] ->
-                Ash.update!(row, %{ops: ops}, action: :apply_projection_ops, authorize?: false)
-
-              _ ->
-                :ok
-            end
-          end
-      end
+      replay_event(projector_module, event)
     end)
     |> case do
       {:ok, _} -> :ok
@@ -167,6 +147,32 @@ defmodule AshEvents.Projections.Operations.Dlq do
   rescue
     error -> {:error, error}
   end
+
+  defp replay_event(projector_module, event) do
+    grain_fn = projector_module.__grain__()
+    resource = projector_module.__projection_resource__()
+
+    case grain_fn.(event) do
+      nil -> :ok
+      grain_key -> replay_grain(projector_module, event, resource, grain_key)
+    end
+  end
+
+  defp replay_grain(projector_module, event, resource, grain_key) do
+    row = upsert_grain(resource, grain_key)
+
+    if projector_module.needs_current_state?(event) do
+      apply_handler_ops(projector_module.handle_event(event, row), row)
+    else
+      apply_handler_ops(projector_module.handle_event(event), row)
+    end
+  end
+
+  defp apply_handler_ops({:ok, ops}, row) when ops != [] do
+    Ash.update!(row, %{ops: ops}, action: :apply_projection_ops, authorize?: false)
+  end
+
+  defp apply_handler_ops(_, _row), do: :ok
 
   defp upsert_grain(resource, grain_key) when is_map(grain_key) do
     Ash.create!(resource, grain_key, action: :upsert_grain, authorize?: false)

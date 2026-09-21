@@ -113,7 +113,7 @@ defmodule AshEvents.Projections.Server do
     after_id = checkpoint.last_seen_event_id || 0
 
     batch =
-      from(e in AshEvents.Projections.Config.event_table(),
+      from(e in Config.event_table(),
         select: %{
           id: e.id,
           practice_id: e.practice_id,
@@ -181,27 +181,38 @@ defmodule AshEvents.Projections.Server do
     resource = projector.__projection_resource__()
 
     with grain_key when not is_nil(grain_key) <- projector.__grain__().(event) do
-      if projector.needs_current_state?(event) do
-        row = get_or_upsert_grain(resource, grain_key)
-
-        case projector.handle_event(event, row) do
-          {:ok, ops} when ops != [] ->
-            Ash.update!(row, %{ops: ops}, action: :apply_projection_ops, authorize?: false)
-
-          _ ->
-            :ok
-        end
-      else
-        case projector.handle_event(event) do
-          {:ok, ops} when ops != [] ->
-            row = get_or_upsert_grain(resource, grain_key)
-            Ash.update!(row, %{ops: ops}, action: :apply_projection_ops, authorize?: false)
-
-          _ ->
-            :ok
-        end
-      end
+      apply_grain_ops(projector, event, resource, grain_key)
     end
+  end
+
+  defp apply_grain_ops(projector, event, resource, grain_key) do
+    if projector.needs_current_state?(event) do
+      row = get_or_upsert_grain(resource, grain_key)
+
+      case projector.handle_event(event, row) do
+        {:ok, ops} when ops != [] -> apply_ops!(row, ops)
+        _ -> :ok
+      end
+    else
+      apply_stateless(projector, event, resource, grain_key)
+    end
+  end
+
+  # Stateless (arity 1): call handler first; skip the DB hit entirely when it
+  # returns :skip or empty ops.
+  defp apply_stateless(projector, event, resource, grain_key) do
+    case projector.handle_event(event) do
+      {:ok, ops} when ops != [] ->
+        row = get_or_upsert_grain(resource, grain_key)
+        apply_ops!(row, ops)
+
+      _ ->
+        :ok
+    end
+  end
+
+  defp apply_ops!(row, ops) do
+    Ash.update!(row, %{ops: ops}, action: :apply_projection_ops, authorize?: false)
   end
 
   defp handle_failure(projector, event, error, stacktrace) do

@@ -41,7 +41,7 @@ defmodule AshEvents.Projections.Lag do
   """
   @spec snapshot() :: [map()]
   def snapshot do
-    projectors = AshEvents.Projections.Config.projectors()
+    projectors = Config.projectors()
     head = head_id()
     head_at = head_occurred_at()
 
@@ -53,7 +53,7 @@ defmodule AshEvents.Projections.Lag do
   """
   @spec snapshot_for(String.t()) :: map() | nil
   def snapshot_for(name) when is_binary(name) do
-    AshEvents.Projections.Config.projectors()
+    Config.projectors()
     |> Enum.find(&(&1.__projector_name__() == name))
     |> case do
       nil -> nil
@@ -90,13 +90,11 @@ defmodule AshEvents.Projections.Lag do
   end
 
   defp head_id do
-    Config.repo().one(from(e in AshEvents.Projections.Config.event_table(), select: max(e.id)))
+    Config.repo().one(from(e in Config.event_table(), select: max(e.id)))
   end
 
   defp head_occurred_at do
-    Config.repo().one(
-      from(e in AshEvents.Projections.Config.event_table(), select: max(e.occurred_at))
-    )
+    Config.repo().one(from(e in Config.event_table(), select: max(e.occurred_at)))
   end
 
   defp checkpoint_last_seen(name) do
@@ -110,7 +108,7 @@ defmodule AshEvents.Projections.Lag do
 
   defp occurred_at_for_id(id) do
     Config.repo().one(
-      from(e in AshEvents.Projections.Config.event_table(),
+      from(e in Config.event_table(),
         where: e.id == ^id,
         select: e.occurred_at
       )
@@ -135,13 +133,13 @@ defmodule AshEvents.Projections.Lag do
   # `head_id - last_seen_id`) avoids over-counting bigserial gaps left by
   # rolled-back inserts — those gaps are NOT real backlog work.
   defp lag_events(nil) do
-    Config.repo().one(from(e in AshEvents.Projections.Config.event_table(), select: count(e.id))) ||
+    Config.repo().one(from(e in Config.event_table(), select: count(e.id))) ||
       0
   end
 
   defp lag_events(last_seen) when is_integer(last_seen) do
     Config.repo().one(
-      from(e in AshEvents.Projections.Config.event_table(),
+      from(e in Config.event_table(),
         where: e.id > ^last_seen,
         select: count(e.id)
       )

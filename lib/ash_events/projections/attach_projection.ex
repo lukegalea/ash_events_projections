@@ -101,8 +101,11 @@ defmodule AshEvents.Projections.AttachProjection.Transformer do
   @moduledoc false
   use Spark.Dsl.Transformer
 
+  alias Ash.Resource.Builder
+  alias Spark.Dsl.Transformer
+
   def transform(dsl) do
-    attachments = Spark.Dsl.Transformer.get_entities(dsl, [:projections])
+    attachments = Transformer.get_entities(dsl, [:projections])
 
     Enum.reduce_while(attachments, {:ok, dsl}, fn attachment, {:ok, acc_dsl} ->
       case inject_calculations(acc_dsl, attachment) do
@@ -121,7 +124,7 @@ defmodule AshEvents.Projections.AttachProjection.Transformer do
         default: field.default
       ]
 
-      case Ash.Resource.Builder.add_calculation(
+      case Builder.add_calculation(
              acc_dsl,
              field.name,
              field.type,
@@ -163,21 +166,28 @@ defmodule AshEvents.Projections.AttachProjection.Calc do
     default = Keyword.get(opts, :default, 0)
 
     Enum.map(records, fn record ->
-      case projector.current_grain_for_record(record) do
-        nil ->
-          default
-
-        grain_key ->
-          grain_key
-          |> Enum.reduce(stats_resource, fn {field, value}, query ->
-            Ash.Query.filter(query, ^[{field, value}])
-          end)
-          |> Ash.read_one!(authorize?: false)
-          |> case do
-            nil -> default
-            stats -> Map.get(stats, stats_field) || default
-          end
+      lookup_stats(projector, stats_resource, record)
+      |> case do
+        nil -> default
+        stats -> Map.get(stats, stats_field) || default
       end
     end)
+  end
+
+  # Point-lookup into the stats table keyed by the record's grain. Returns nil
+  # when the grain cannot be resolved or no stats row exists.
+  defp lookup_stats(projector, stats_resource, record) do
+    case projector.current_grain_for_record(record) do
+      nil -> nil
+      grain_key -> read_stats_row(stats_resource, grain_key)
+    end
+  end
+
+  defp read_stats_row(stats_resource, grain_key) do
+    grain_key
+    |> Enum.reduce(stats_resource, fn {field, value}, query ->
+      Ash.Query.filter(query, ^[{field, value}])
+    end)
+    |> Ash.read_one!(authorize?: false)
   end
 end

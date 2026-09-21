@@ -14,6 +14,8 @@ defmodule AshEvents.Projections.PubSubListener do
 
   use GenServer
 
+  alias AshEvents.Projections.{Config, Server}
+
   require Logger
 
   def child_spec(opts) do
@@ -32,20 +34,17 @@ defmodule AshEvents.Projections.PubSubListener do
 
   @impl true
   def init(_opts) do
-    Phoenix.PubSub.subscribe(
-      AshEvents.Projections.Config.pubsub(),
-      AshEvents.Projections.Config.pubsub_topic()
-    )
+    Phoenix.PubSub.subscribe(Config.pubsub(), Config.pubsub_topic())
 
     {:ok, %{}}
   end
 
   @impl true
   def handle_info({:event_committed, event_log_module}, state) do
-    AshEvents.Projections.Config.projectors()
+    Config.projectors()
     |> Enum.filter(&(&1.__event_log__() == event_log_module))
     |> Enum.each(fn projector ->
-      AshEvents.Projections.Server.notify(projector.__projector_name__())
+      Server.notify(projector.__projector_name__())
     end)
 
     {:noreply, state}

@@ -46,7 +46,7 @@ defmodule AshEvents.Projections.TimeTravel do
 
     target_key = normalize_key(grain_key)
 
-    AshEvents.Projections.Config.event_table()
+    Config.event_table()
     |> select_columns()
     |> where_before(timestamp)
     |> Config.repo().all()
@@ -84,9 +84,11 @@ defmodule AshEvents.Projections.TimeTravel do
       {:increment, f, n}, s -> Map.update(s, f, n, &(&1 + n))
       {:decrement, f, n}, s -> Map.update(s, f, -n, &(&1 - n))
       {:set, f, v}, s -> Map.put(s, f, v)
-      {:max, f, v}, s -> Map.update(s, f, v, fn cur -> if(cur >= v, do: cur, else: v) end)
+      {:max, f, v}, s -> Map.update(s, f, v, &max_value(&1, v))
     end)
   end
+
+  defp max_value(current, v), do: if(current >= v, do: current, else: v)
 
   defp normalize_key(key) when is_map(key), do: key
 

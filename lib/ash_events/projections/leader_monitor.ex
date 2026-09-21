@@ -43,6 +43,8 @@ defmodule AshEvents.Projections.LeaderMonitor do
 
   use GenServer
 
+  alias AshEvents.Projections.Server
+
   require Logger
 
   @retry_interval :timer.minutes(1)
@@ -118,7 +120,7 @@ defmodule AshEvents.Projections.LeaderMonitor do
   defp try_take_leadership(state) do
     projector = state.projector
 
-    case AshEvents.Projections.Server.start_link(projector) do
+    case Server.start_link(projector) do
       {:ok, pid} ->
         Logger.info(
           "[Projections.LeaderMonitor] #{projector.__projector_name__()} leader elected on #{node()}"

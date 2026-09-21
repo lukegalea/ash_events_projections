@@ -20,8 +20,7 @@ defmodule AshEvents.Projections.Operations.Verify do
   See `backend/docs/runbooks/09-verify-projection-completeness.md`.
   """
 
-  alias AshEvents.Projections.Server
-  alias AshEvents.Projections.Config
+  alias AshEvents.Projections.{Config, Server}
 
   import Ecto.Query
 
@@ -71,7 +70,7 @@ defmodule AshEvents.Projections.Operations.Verify do
   """
   @spec run_all(keyword()) :: [result()]
   def run_all(opts \\ []) do
-    AshEvents.Projections.Config.projectors()
+    Config.projectors()
     |> Enum.map(&run(&1, opts))
   end
 
@@ -81,26 +80,30 @@ defmodule AshEvents.Projections.Operations.Verify do
     grain_fn = projector_module.__grain__()
     grain_fields = projector_module.__projection_resource__().__projection_grain_fields__()
 
-    AshEvents.Projections.Config.event_table()
+    Config.event_table()
     |> select_all_event_columns()
     |> Config.repo().all()
     |> Enum.map(&normalize/1)
     |> Enum.reduce(%{}, fn event, acc ->
-      case grain_fn.(event) do
-        nil ->
-          acc
-
-        grain_key ->
-          key = grain_key_for_acc(grain_key, grain_fields)
-          current = Map.get(acc, key, %{})
-
-          ops_for_event(projector_module, event, current)
-          |> case do
-            :skip -> acc
-            ops -> Map.put(acc, key, apply_ops(current, ops))
-          end
-      end
+      fold_event(projector_module, grain_fn, grain_fields, event, acc)
     end)
+  end
+
+  defp fold_event(projector_module, grain_fn, grain_fields, event, acc) do
+    case grain_fn.(event) do
+      nil -> acc
+      grain_key -> fold_grain(projector_module, grain_key, grain_fields, event, acc)
+    end
+  end
+
+  defp fold_grain(projector_module, grain_key, grain_fields, event, acc) do
+    key = grain_key_for_acc(grain_key, grain_fields)
+    current = Map.get(acc, key, %{})
+
+    case ops_for_event(projector_module, event, current) do
+      :skip -> acc
+      ops -> Map.put(acc, key, apply_ops(current, ops))
+    end
   end
 
   defp ops_for_event(projector_module, event, current) do
@@ -155,32 +158,7 @@ defmodule AshEvents.Projections.Operations.Verify do
 
     drifts_in_expected =
       Enum.flat_map(expected, fn {grain, expected_row} ->
-        case Map.get(actual, grain) do
-          nil ->
-            [
-              %{
-                projection_name: name,
-                grain: grain,
-                field: :__row__,
-                expected: :present,
-                actual: :missing
-              }
-            ]
-
-          actual_row ->
-            for field <- fields_to_compare,
-                exp = Map.get(expected_row, field, default_for(field)),
-                act = Map.get(actual_row, field, default_for(field)),
-                exp != act do
-              %{
-                projection_name: name,
-                grain: grain,
-                field: field,
-                expected: exp,
-                actual: act
-              }
-            end
-        end
+        diff_grain(name, grain, expected_row, actual, fields_to_compare)
       end)
 
     drifts_extra =
@@ -198,6 +176,38 @@ defmodule AshEvents.Projections.Operations.Verify do
       end
 
     drifts_in_expected ++ drifts_extra
+  end
+
+  defp diff_grain(name, grain, expected_row, actual, fields_to_compare) do
+    case Map.get(actual, grain) do
+      nil -> [missing_row_drift(name, grain)]
+      actual_row -> field_drifts(name, grain, expected_row, actual_row, fields_to_compare)
+    end
+  end
+
+  defp missing_row_drift(name, grain) do
+    %{
+      projection_name: name,
+      grain: grain,
+      field: :__row__,
+      expected: :present,
+      actual: :missing
+    }
+  end
+
+  defp field_drifts(name, grain, expected_row, actual_row, fields_to_compare) do
+    for field <- fields_to_compare,
+        exp = Map.get(expected_row, field, default_for(field)),
+        act = Map.get(actual_row, field, default_for(field)),
+        exp != act do
+      %{
+        projection_name: name,
+        grain: grain,
+        field: field,
+        expected: exp,
+        actual: act
+      }
+    end
   end
 
   defp collect_fields(expected) do

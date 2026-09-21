@@ -30,6 +30,9 @@ if Code.ensure_loaded?(Igniter) do
 
     use Igniter.Mix.Task
 
+    alias Igniter.Project.Config
+    alias Igniter.Project.Formatter
+
     @impl Igniter.Mix.Task
     def info(_argv, _source) do
       %Igniter.Mix.Task.Info{
@@ -60,7 +63,7 @@ if Code.ensure_loaded?(Igniter) do
         |> module_or_default(Module.concat([app_module, Events, Event]))
 
       igniter
-      |> Igniter.Project.Formatter.import_dep(:ash_events_projections)
+      |> Formatter.import_dep(:ash_events_projections)
       |> add_config(app_name, repo, pubsub, event_log)
       |> Igniter.Project.Application.add_new_child(
         AshEvents.Projections.Supervisor,
@@ -72,38 +75,38 @@ if Code.ensure_loaded?(Igniter) do
     defp module_or_default(str, _default) when is_binary(str), do: Module.concat([str])
 
     defp add_config(igniter, _app_name, repo, pubsub, event_log) do
-      Igniter.Project.Config.configure_new(
+      Config.configure_new(
         igniter,
         "config.exs",
         :ash_events_projections,
         [:repo],
         repo
       )
-      |> Igniter.Project.Config.configure_new(
+      |> Config.configure_new(
         "config.exs",
         :ash_events_projections,
         [:pubsub],
         pubsub
       )
-      |> Igniter.Project.Config.configure_new(
+      |> Config.configure_new(
         "config.exs",
         :ash_events_projections,
         [:event_log],
         event_log
       )
-      |> Igniter.Project.Config.configure_new(
+      |> Config.configure_new(
         "config.exs",
         :ash_events_projections,
         [:projectors],
         []
       )
-      |> Igniter.Project.Config.configure_new(
+      |> Config.configure_new(
         "config.exs",
         :ash_events_projections,
         [:start_projectors?],
         true
       )
-      |> Igniter.Project.Config.configure_new(
+      |> Config.configure_new(
         "config.exs",
         :ash_events_projections,
         [:start_probe?],

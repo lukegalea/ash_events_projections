@@ -15,6 +15,7 @@ defmodule Mix.Tasks.AshEventsProjections.Rebuild do
 
   use Mix.Task
 
+  alias AshEvents.Projections.Config
   alias AshEvents.Projections.Rebuilder
 
   @shortdoc "Truncates a projection's stats and replays from event 0"
@@ -33,7 +34,7 @@ defmodule Mix.Tasks.AshEventsProjections.Rebuild do
   end
 
   defp find_projector!(name) do
-    AshEvents.Projections.Config.projectors()
+    Config.projectors()
     |> Enum.find(&(&1.__projector_name__() == name))
     |> case do
       nil -> Mix.raise("Unknown projection: #{name}")

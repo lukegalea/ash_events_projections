@@ -20,14 +20,16 @@ defmodule AshEvents.Projections.Events.Changes.NotifyProjectors do
 
   use Ash.Resource.Change
 
+  alias AshEvents.Projections.Config
+
   @impl true
   def change(changeset, _opts, _context) do
     Ash.Changeset.after_transaction(changeset, fn _changeset, result ->
       case result do
         {:ok, event} ->
           Phoenix.PubSub.broadcast(
-            AshEvents.Projections.Config.pubsub(),
-            AshEvents.Projections.Config.pubsub_topic(),
+            Config.pubsub(),
+            Config.pubsub_topic(),
             {:event_committed, event.__struct__}
           )
 

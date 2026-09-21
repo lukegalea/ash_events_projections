@@ -15,6 +15,7 @@ defmodule AshEvents.Projections.Probe do
   use GenServer
   require Logger
 
+  alias AshEvents.Projections.Config
   alias AshEvents.Projections.Lag
 
   @default_interval :timer.seconds(30)
@@ -50,7 +51,7 @@ defmodule AshEvents.Projections.Probe do
   def emit_metrics do
     Enum.each(Lag.snapshot(), fn row ->
       :telemetry.execute(
-        AshEvents.Projections.Config.telemetry_prefix() ++ [:lag],
+        Config.telemetry_prefix() ++ [:lag],
         %{
           lag_events: row.lag_events,
           lag_seconds: row.lag_seconds,

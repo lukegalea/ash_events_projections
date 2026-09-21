@@ -19,6 +19,7 @@ defmodule Mix.Tasks.AshEventsProjections.Bootstrap do
 
   use Mix.Task
 
+  alias AshEvents.Projections.Config
   alias AshEvents.Projections.Operations.Bootstrap
 
   @shortdoc "Replays the full event log into a (presumed empty) projection"
@@ -37,7 +38,7 @@ defmodule Mix.Tasks.AshEventsProjections.Bootstrap do
   end
 
   defp find_projector!(name) do
-    AshEvents.Projections.Config.projectors()
+    Config.projectors()
     |> Enum.find(&(&1.__projector_name__() == name))
     |> case do
       nil -> Mix.raise("Unknown projection: #{name}")

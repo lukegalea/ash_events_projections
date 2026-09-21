@@ -31,12 +31,17 @@ defmodule AshEvents.Projections.Events.RequireOptIn.Verifier do
 
   use Spark.Dsl.Verifier
 
+  alias AshEvents.Events.Info
+  alias Spark.Dsl.Extension
+  alias Spark.Dsl.Verifier
+  alias Spark.Error.DslError
+
   @impl true
   def verify(dsl_state) do
-    extensions = Spark.Dsl.Extension.get_persisted(dsl_state, :extensions, [])
+    extensions = Extension.get_persisted(dsl_state, :extensions, [])
 
     if AshEvents.Events in extensions do
-      case AshEvents.Events.Info.events_only_actions(dsl_state) do
+      case Info.events_only_actions(dsl_state) do
         {:ok, nil} -> missing_opt_in_error(dsl_state)
         {:ok, []} -> missing_opt_in_error(dsl_state)
         {:ok, _actions} -> :ok
@@ -48,10 +53,10 @@ defmodule AshEvents.Projections.Events.RequireOptIn.Verifier do
   end
 
   defp missing_opt_in_error(dsl_state) do
-    resource = Spark.Dsl.Verifier.get_persisted(dsl_state, :module)
+    resource = Verifier.get_persisted(dsl_state, :module)
 
     {:error,
-     Spark.Error.DslError.exception(
+     DslError.exception(
        message:
          "Resource #{inspect(resource)} uses AshEvents.Events but does not declare " <>
            "`only_actions`. Explicitly list the actions that should be logged:\n\n" <>

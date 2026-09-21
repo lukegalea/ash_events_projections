@@ -19,6 +19,7 @@ defmodule Mix.Tasks.AshEventsProjections.Dlq do
 
   use Mix.Task
 
+  alias AshEvents.Projections.Config
   alias AshEvents.Projections.Operations.Dlq
 
   @shortdoc "Inspect / replay / purge dead-letter rows for a projector"
@@ -92,7 +93,7 @@ defmodule Mix.Tasks.AshEventsProjections.Dlq do
   end
 
   defp find_projector!(name) do
-    AshEvents.Projections.Config.projectors()
+    Config.projectors()
     |> Enum.find(&(&1.__projector_name__() == name))
     |> case do
       nil -> Mix.raise("Unknown projection: #{name}")

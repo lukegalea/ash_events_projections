@@ -37,15 +37,17 @@ defmodule AshEvents.Projections.Supervisor do
 
   use Supervisor
 
+  alias AshEvents.Projections.Config
+
   def start_link(opts \\ []) do
     projectors =
-      if AshEvents.Projections.Config.start_projectors?(opts) do
-        AshEvents.Projections.Config.projectors(opts)
+      if Config.start_projectors?(opts) do
+        Config.projectors(opts)
       else
         []
       end
 
-    start_probe? = AshEvents.Projections.Config.start_probe?(opts)
+    start_probe? = Config.start_probe?(opts)
     name = Keyword.get(opts, :name, __MODULE__)
 
     Supervisor.start_link(

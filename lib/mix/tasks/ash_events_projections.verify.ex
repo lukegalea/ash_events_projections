@@ -14,6 +14,7 @@ defmodule Mix.Tasks.AshEventsProjections.Verify do
 
   use Mix.Task
 
+  alias AshEvents.Projections.Config
   alias AshEvents.Projections.Operations.Verify
 
   @shortdoc "Diffs each projection's stats vs a fresh recompute from events"
@@ -48,7 +49,7 @@ defmodule Mix.Tasks.AshEventsProjections.Verify do
   end
 
   defp find_projector!(name) do
-    AshEvents.Projections.Config.projectors()
+    Config.projectors()
     |> Enum.find(&(&1.__projector_name__() == name))
     |> case do
       nil -> Mix.raise("Unknown projection: #{name}")
