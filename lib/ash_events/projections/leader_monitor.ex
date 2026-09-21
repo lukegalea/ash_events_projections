@@ -69,6 +69,10 @@ defmodule AshEvents.Projections.LeaderMonitor do
     end
   rescue
     _ -> nil
+  catch
+    # GenServer.call exits (rather than raises) when no monitor process is
+    # alive under the registered name — return nil as documented.
+    :exit, _ -> nil
   end
 
   # -------------------------------------------------------------------------
