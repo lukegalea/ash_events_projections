@@ -169,7 +169,12 @@ defmodule AshEvents.Projections.Operations.Verify do
       for {grain, _row} <- actual,
           not Map.has_key?(expected, grain),
           actual_row = Map.get(actual, grain),
-          has_nonzero_counter?(actual_row, fields_to_compare) do
+          # Inspect the row's own fields rather than the fields seen in the
+          # expected fold: when no events map to a projection at all, the
+          # expected set is empty and a bare counter check against it would
+          # never fire. Only integer values can count as stray counters, so
+          # uuid pks / timestamps never trigger a false positive.
+          has_nonzero_counter?(actual_row, Map.keys(actual_row)) do
         %{
           projection_name: name,
           grain: grain,
