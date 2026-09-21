@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Luke Galea
+#
+# SPDX-License-Identifier: MIT
+
 defmodule AshEvents.Projections.AttachProjection do
   @moduledoc """
   Spark DSL extension that attaches pre-aggregated projection stats to any

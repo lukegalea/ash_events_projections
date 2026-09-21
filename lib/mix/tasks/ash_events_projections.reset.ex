@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Luke Galea
+#
+# SPDX-License-Identifier: MIT
+
 defmodule Mix.Tasks.AshEventsProjections.Reset do
   @moduledoc """
   Resets a projector's checkpoint to 0 WITHOUT truncating its stats.

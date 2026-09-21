@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Luke Galea
+#
+# SPDX-License-Identifier: MIT
+
 defmodule AshEvents.Projections.Server do
   @moduledoc """
   One GenServer per projector. Owns the drain loop — boot replay, live event

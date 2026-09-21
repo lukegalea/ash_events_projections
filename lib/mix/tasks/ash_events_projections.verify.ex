@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Luke Galea
+#
+# SPDX-License-Identifier: MIT
+
 defmodule Mix.Tasks.AshEventsProjections.Verify do
   @moduledoc """
   Recomputes every projector's stats from the raw event log and reports any

@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Luke Galea
+
+SPDX-License-Identifier: MIT
+-->
+
 # Architecture
 
 `ash_events_projections` separates two concerns that traditional CRUD

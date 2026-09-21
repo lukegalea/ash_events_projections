@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Luke Galea
+#
+# SPDX-License-Identifier: MIT
+
 defmodule AshEvents.Projections.Lag do
   @moduledoc """
   Computes per-projector lag against the event log head.

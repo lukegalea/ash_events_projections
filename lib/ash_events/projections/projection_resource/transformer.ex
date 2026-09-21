@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Luke Galea
+#
+# SPDX-License-Identifier: MIT
+
 defmodule AshEvents.Projections.ProjectionResource.Transformer do
   @moduledoc false
 

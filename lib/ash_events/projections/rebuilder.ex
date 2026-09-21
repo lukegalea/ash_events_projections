@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Luke Galea
+#
+# SPDX-License-Identifier: MIT
+
 defmodule AshEvents.Projections.Rebuilder do
   @moduledoc """
   Safely replays a projection from event 0 by:

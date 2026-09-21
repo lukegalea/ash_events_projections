@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Luke Galea
+#
+# SPDX-License-Identifier: MIT
+
 defmodule AshEvents.Projections.Operations.Bootstrap do
   @moduledoc """
   Backfills a freshly-added projection from the historical event log.

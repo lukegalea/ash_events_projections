@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Luke Galea
+#
+# SPDX-License-Identifier: MIT
+
 defmodule AshEvents.Projections.Domain do
   @moduledoc """
   Internal Ash domain that owns the engine's three persistence resources.

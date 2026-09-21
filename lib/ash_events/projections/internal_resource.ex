@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Luke Galea
+#
+# SPDX-License-Identifier: MIT
+
 defmodule AshEvents.Projections.InternalResource do
   @moduledoc """
   Helper macro used by the engine's three internal resources (`Checkpoint`,

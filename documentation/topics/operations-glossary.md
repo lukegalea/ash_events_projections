@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Luke Galea
+
+SPDX-License-Identifier: MIT
+-->
+
 # Operations glossary
 
 Reference for every mix task and runtime helper in the operations toolkit.

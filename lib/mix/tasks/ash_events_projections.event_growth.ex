@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Luke Galea
+#
+# SPDX-License-Identifier: MIT
+
 defmodule Mix.Tasks.AshEventsProjections.EventGrowth do
   @moduledoc """
   Reports per-day event count and approximate payload size for the last

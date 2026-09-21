@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Luke Galea
+#
+# SPDX-License-Identifier: MIT
+
 defmodule AshEvents.Projections.Events.Changes.ExtractMetadataFields do
   @moduledoc """
   Generic change that copies named fields from an event resource's `metadata`

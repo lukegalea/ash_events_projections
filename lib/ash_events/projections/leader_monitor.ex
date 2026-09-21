@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Luke Galea
+#
+# SPDX-License-Identifier: MIT
+
 defmodule AshEvents.Projections.LeaderMonitor do
   @moduledoc """
   Guarantees exactly one running `AshEvents.Projections.Server` per projector

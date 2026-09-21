@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Luke Galea
+#
+# SPDX-License-Identifier: MIT
+
 defmodule AshEvents.Projections.TestRepo.Migrations.InitialSchema do
   @moduledoc """
   Updates resources based on their most recent snapshots.

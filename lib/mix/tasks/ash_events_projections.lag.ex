@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Luke Galea
+#
+# SPDX-License-Identifier: MIT
+
 defmodule Mix.Tasks.AshEventsProjections.Lag do
   @moduledoc """
   Reports current lag, status, leader node, and DLQ depth for every

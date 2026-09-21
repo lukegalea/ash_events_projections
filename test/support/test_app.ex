@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Luke Galea
+#
+# SPDX-License-Identifier: MIT
+
 defmodule AshEvents.Projections.TestApp do
   @moduledoc """
   Test-only application that hosts a minimal AshEvents wiring and the engine

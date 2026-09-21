@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Luke Galea
+#
+# SPDX-License-Identifier: MIT
+
 defmodule AshEvents.Projections.Events.RequireOptIn do
   @moduledoc """
   Spark extension that enforces explicit event opt-in for any resource that

@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Luke Galea
+
+SPDX-License-Identifier: MIT
+-->
+
 # Getting started
 
 This tutorial walks through wiring `ash_events_projections` into an Ash

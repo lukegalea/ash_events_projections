@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Luke Galea
+#
+# SPDX-License-Identifier: MIT
+
 defmodule AshEvents.Projections.DeadLetter do
   @moduledoc """
   A poison-pill record for events that raised inside a projector handler.

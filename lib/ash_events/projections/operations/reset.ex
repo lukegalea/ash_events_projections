@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Luke Galea
+#
+# SPDX-License-Identifier: MIT
+
 defmodule AshEvents.Projections.Operations.Reset do
   @moduledoc """
   Resets a projector's checkpoint without truncating its stats table.

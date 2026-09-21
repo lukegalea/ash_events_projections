@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Luke Galea
+#
+# SPDX-License-Identifier: MIT
+
 defmodule AshEvents.Projections.Events.RecordIdAdvisoryLockKeyGenerator do
   @moduledoc """
   Custom advisory lock key generator for AshEvents.

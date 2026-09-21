@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Luke Galea
+#
+# SPDX-License-Identifier: MIT
+
 defmodule AshEvents.Projections.ProjectionResource do
   @moduledoc """
   Spark extension that injects the two actions every stats resource needs:

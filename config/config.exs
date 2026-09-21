@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Luke Galea
+#
+# SPDX-License-Identifier: MIT
+
 import Config
 
 # Required by ash >= 3.33 (RequireStringLengthCountConfig transformer).

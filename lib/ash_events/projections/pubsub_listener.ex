@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Luke Galea
+#
+# SPDX-License-Identifier: MIT
+
 defmodule AshEvents.Projections.PubSubListener do
   @moduledoc """
   Subscribes to the Phoenix PubSub projection topic on each node and forwards

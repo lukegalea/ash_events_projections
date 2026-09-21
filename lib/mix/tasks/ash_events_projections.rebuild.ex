@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Luke Galea
+#
+# SPDX-License-Identifier: MIT
+
 defmodule Mix.Tasks.AshEventsProjections.Rebuild do
   @moduledoc """
   Safely rebuilds a projection by truncating its stats table and replaying

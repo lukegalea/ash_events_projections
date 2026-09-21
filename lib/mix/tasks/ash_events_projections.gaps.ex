@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Luke Galea
+#
+# SPDX-License-Identifier: MIT
+
 defmodule Mix.Tasks.AshEventsProjections.Gaps do
   @moduledoc """
   Reports gaps in `ash_events.id` (positions where the bigserial sequence

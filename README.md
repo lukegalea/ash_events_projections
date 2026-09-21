@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Luke Galea
+
+SPDX-License-Identifier: MIT
+-->
+
 # AshEvents.Projections
 
 [![Hex.pm](https://img.shields.io/hexpm/v/ash_events_projections.svg)](https://hex.pm/packages/ash_events_projections)

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Luke Galea
+#
+# SPDX-License-Identifier: MIT
+
 defmodule AshEvents.Projections.DataCase do
   @moduledoc """
   Brings in Ecto sandbox and Ash test helpers for extension tests.

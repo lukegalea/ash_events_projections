@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Luke Galea
+#
+# SPDX-License-Identifier: MIT
+
 defmodule AshEvents.Projections.Operations.Dlq do
   @moduledoc """
   Inspect, replay, and purge dead-letter rows for a projector.

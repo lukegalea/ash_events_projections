@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Luke Galea
+#
+# SPDX-License-Identifier: MIT
+
 defmodule AshEvents.Projections.TestRepo do
   @moduledoc false
   use AshPostgres.Repo, otp_app: :ash_events_projections, warn_on_missing_ash_functions?: false

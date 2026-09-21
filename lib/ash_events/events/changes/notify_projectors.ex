@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Luke Galea
+#
+# SPDX-License-Identifier: MIT
+
 defmodule AshEvents.Projections.Events.Changes.NotifyProjectors do
   @moduledoc """
   Signals projection Servers after an event row is committed.

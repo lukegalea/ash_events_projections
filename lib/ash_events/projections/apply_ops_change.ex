@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Luke Galea
+#
+# SPDX-License-Identifier: MIT
+
 defmodule AshEvents.Projections.ApplyOpsChange do
   @moduledoc """
   An `Ash.Resource.Change` that translates projection op tuples into atomic

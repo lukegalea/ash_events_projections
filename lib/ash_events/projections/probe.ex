@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Luke Galea
+#
+# SPDX-License-Identifier: MIT
+
 defmodule AshEvents.Projections.Probe do
   @moduledoc """
   Periodically samples `AshEvents.Projections.Lag.snapshot/0` and emits

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Luke Galea
+#
+# SPDX-License-Identifier: MIT
+
 defmodule AshEvents.Projections.TimeTravel do
   @moduledoc """
   Reconstructs the projection state for a single grain at any past point in

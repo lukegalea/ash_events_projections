@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Luke Galea
+#
+# SPDX-License-Identifier: MIT
+
 defmodule AshEvents.Projections.Supervisor do
   @moduledoc """
   Starts one `AshEvents.Projections.LeaderMonitor` per configured projector,

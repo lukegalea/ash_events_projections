@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Luke Galea
+#
+# SPDX-License-Identifier: MIT
+
 defmodule AshEvents.Projections.Operations.Gaps do
   @moduledoc """
   Detects gaps in `ash_events.id` — positions where the bigserial sequence
