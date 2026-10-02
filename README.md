@@ -217,6 +217,12 @@ cluster), the `Registry` (rebuild safety), and the operations layer.
 
 ---
 
+## Contributing
+
+Agents: read [AGENTS.md](AGENTS.md) before you change this repository. It links the agent constitution (`AGENT_PRINCIPLES.md`).
+
+---
+
 ## License
 
 MIT © 2026 Luke Galea and ash_events_projections contributors.
