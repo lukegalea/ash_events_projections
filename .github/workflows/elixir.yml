@@ -91,3 +91,19 @@ jobs:
           elixir-version: "1.17.3"
       - run: mix deps.get
       - run: mix deps.audit
+
+  # `mix deps.audit` (mix_audit) reads its own advisory database and has
+  # reported "No vulnerabilities found" while Hex's advisory feed flagged
+  # locked packages (SDLC-96). `mix hex.audit` checks the lock against Hex's
+  # retirements and security advisories, so both gates run.
+  hex-audit:
+    name: mix hex.audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: "27.0"
+          elixir-version: "1.17.3"
+      - run: mix deps.get
+      - run: mix hex.audit
