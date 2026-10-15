@@ -72,8 +72,8 @@ end
 Start the supervisor **after** the repo and the PubSub server.
 
 Then signal projectors when an event commits, on your event log resource.
-Servers drain on boot, on this signal, and on `Server.flush/1`; there is no
-polling:
+Servers drain on boot, on this signal, on `Server.flush/1`, and after a
+rebuild, reset or bootstrap; there is no polling:
 
 ```elixir
 changes do

@@ -41,9 +41,10 @@ writes the config block and adds the supervisor.
 ## The event log
 
 - Add `change AshEvents.Projections.Events.Changes.NotifyProjectors, on: [:create]`
-  to the event log resource. Servers drain on boot, on that signal, and on
-  `Server.flush/1`; there is no polling, so without it new events are not
-  projected until the next restart or flush.
+  to the event log resource. Servers drain on boot, on that signal, on
+  `Server.flush/1`, and after a rebuild, reset or bootstrap; there is no
+  polling, so without it new events are not projected until one of those
+  happens.
 - The engine reads the event table with schemaless queries that select
   `id, practice_id, user_id, occurred_at, metadata, data, resource, action,
   action_type`. The table must have a `practice_id` column as well as the

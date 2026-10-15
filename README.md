@@ -99,7 +99,8 @@ resources, so set them in `config/config.exs` (or an env file), not only in
 `config/runtime.exs`.
 
 Then add the commit signal to your event log resource. Projectors drain on
-boot, on this signal, and on `Server.flush/1`; there is no polling:
+boot, on this signal, on `Server.flush/1`, and after a rebuild, reset or
+bootstrap; there is no polling:
 
 ```elixir
 changes do

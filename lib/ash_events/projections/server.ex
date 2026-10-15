@@ -22,8 +22,9 @@ defmodule AshEvents.Projections.Server do
       A DLQ row is then inserted (in a fresh transaction) and the checkpoint
       advances past the offending event so the projector keeps flowing.
     * **Rebuilding** — the projector's `Registry` row is `:rebuilding`. The
-      drain short-circuits to `:idle`; the next poll picks up where it left
-      off once the rebuild flips status back to `:active`.
+      drain short-circuits to `:idle`; the rebuild notifies the server when it
+      flips status back to `:active`, and the next drain picks up where it
+      left off.
   """
 
   use GenServer

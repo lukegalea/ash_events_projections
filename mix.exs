@@ -113,7 +113,7 @@ defmodule AshEvents.Projections.MixProject do
           AshEvents.Projections.Supervisor,
           AshEvents.Projections.Server,
           AshEvents.Projections.LeaderMonitor,
-          AshEvents.Projections.PubsubListener,
+          AshEvents.Projections.PubSubListener,
           AshEvents.Projections.Probe
         ],
         Resources: [
