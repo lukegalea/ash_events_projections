@@ -49,16 +49,18 @@ asks the (cluster-wide-unique) Server to drain.
 
 ## Drain loop
 
-Each `Server.drain/0` does roughly:
+Each drain pass does roughly:
 
   1. Check the projector's `Registry.status` — if `:rebuilding`, return `:idle`
-     immediately (a parallel rebuild owns the table).
+     immediately (a rebuild owns the table).
   2. Read the projector's `Checkpoint.last_seen_event_id`.
   3. Stream the next batch of events with `id > last_seen_event_id`.
   4. For each event, in its own transaction:
-       a. Call the projector's `apply_event/2`, which returns a list of
-          *projection ops* (`{:increment, :field, n}`, `{:set, :field, val}`,
-          `{:max, :field, val}`).
+       a. Compute the grain; a `nil` grain skips the event. Call the
+          projector's `handle_event/1` (or `handle_event/2` with the current
+          row, for arity-2 handlers), which returns a list of *projection
+          ops* (`{:increment, :field, n}`, `{:decrement, :field, n}`,
+          `{:set, :field, val}`, `{:max, :field, val}`).
        b. Apply the ops atomically to the projection resource via
           `AshEvents.Projections.ApplyOpsChange`.
        c. Advance the checkpoint (`Checkpoint.advance(event_id)`) in the same
@@ -68,7 +70,7 @@ If the handler raises, the per-event transaction rolls back, a DLQ row is
 inserted in a *fresh* transaction, the checkpoint advances past the offending
 event, and the loop continues. Bad events never block the projector.
 
-## Why two-table rebuilds work safely
+## Why rebuilds work safely
 
 To rebuild a projection, `Rebuilder.rebuild!/1` flips the projector's
 `Registry.status` to `:rebuilding`, truncates the stats table, replays the
