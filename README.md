@@ -91,8 +91,22 @@ config :ash_events_projections,
   start_probe?: false
 ```
 
-Then run `mix ash_events_projections.install` for an Igniter-driven scaffold
-that wires the rest.
+With Igniter installed, `mix igniter.install ash_events_projections` writes the
+config block and adds the supervisor for you.
+
+`repo` and `table_prefix` are read at compile time by the engine's internal
+resources, so set them in `config/config.exs` (or an env file), not only in
+`config/runtime.exs`.
+
+Then add the commit signal to your event log resource. Projectors drain on
+boot, on this signal, on `Server.flush/1`, and after a rebuild, reset or
+bootstrap; there is no polling:
+
+```elixir
+changes do
+  change AshEvents.Projections.Events.Changes.NotifyProjectors, on: [:create]
+end
+```
 
 ---
 
@@ -154,14 +168,28 @@ defmodule MyApp.Users.User do
   use Ash.Resource,
     extensions: [AshEvents.Projections.AttachProjection]
 
-  attach_projection MyApp.Projections.NotesPerDayProjector do
-    field :notes_today, :notes_count, default: 0
+  projections do
+    attach_projection MyApp.Projections.NotesPerDayStats,
+                      MyApp.Projections.NotesPerDayProjector do
+      field :notes_today, :notes_count, :integer, default: 0
+    end
   end
 end
 ```
 
-`user.notes_today` is now a calculation that joins the projection on the
-appropriate grain.
+The projector named second must also define `current_grain_for_record/1` and
+`preload_for_grain/0`:
+
+```elixir
+# in MyApp.Projections.NotesPerDayProjector
+def preload_for_grain, do: []
+
+def current_grain_for_record(user),
+  do: %{user_id: user.id, date: Date.utc_today()}
+```
+
+`user.notes_today` is now a calculation that looks up the stats row for the
+grain `current_grain_for_record/1` returns.
 
 ---
 
@@ -185,8 +213,8 @@ a Kubernetes-style readiness gate:
 get "/health/projections", MyAppWeb.HealthController, :projections
 ```
 
-See the [how-to guides](https://hexdocs.pm/ash_events_projections/how-to.html)
-for the full runbook.
+See the [operations glossary](https://hexdocs.pm/ash_events_projections/operations-glossary.html)
+for every task, flag and runtime helper.
 
 ---
 
@@ -194,7 +222,7 @@ for the full runbook.
 
 ```
 ┌─────────────────┐   ┌───────────────┐   ┌──────────────┐
-│ AshEvents log   │──▶│ NotifyProjectors│──▶│ PubsubListener│
+│ AshEvents log   │──▶│ NotifyProjectors│──▶│ PubSubListener│
 │ (ash_events)    │   └───────────────┘   └──────┬───────┘
 └─────────────────┘                              │
                                                  ▼

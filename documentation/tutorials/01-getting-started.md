@@ -71,6 +71,21 @@ end
 
 Start the supervisor **after** the repo and the PubSub server.
 
+Then signal projectors when an event commits, on your event log resource.
+Servers drain on boot, on this signal, on `Server.flush/1`, and after a
+rebuild, reset or bootstrap; there is no polling:
+
+```elixir
+changes do
+  change AshEvents.Projections.Events.Changes.NotifyProjectors, on: [:create]
+end
+```
+
+The engine reads the event table directly and selects a `practice_id` column
+alongside the AshEvents columns, so the event log resource needs a
+`practice_id` attribute (`AshEvents.Projections.Events.Changes.ExtractMetadataFields`
+can fill it from `metadata`).
+
 ## 4. Define a projection target
 
 ```elixir
@@ -100,8 +115,9 @@ end
 The `ProjectionResource` extension automatically adds:
 
   * An `:apply_projection_ops` action that the engine uses to atomically
-    apply `{:increment, :field, n}` / `{:set, :field, val}` / `{:max, :field, val}`
-    operations.
+    apply `{:increment, :field, n}` / `{:decrement, :field, n}` /
+    `{:set, :field, val}` / `{:max, :field, val}` operations.
+  * A `:by_grain` identity over `grain_fields` (do not declare it yourself).
   * An `:upsert_grain` action used to materialize a new grain row on demand.
   * A `truncate!/0` function the `Rebuilder` calls before replaying the log.
 
@@ -115,8 +131,8 @@ defmodule MyApp.Projections.NotesPerDayProjector do
     projection_resource: MyApp.Projections.NotesPerDayStats
 
   grain fn event ->
-    case event.action_name do
-      :create -> [day: DateTime.to_date(event.occurred_at)]
+    case event.action do
+      :create -> %{day: DateTime.to_date(event.occurred_at)}
       _ -> nil
     end
   end

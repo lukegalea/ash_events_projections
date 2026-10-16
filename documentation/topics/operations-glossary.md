@@ -12,8 +12,8 @@ Reference for every mix task and runtime helper in the operations toolkit.
 
 | Task | Purpose |
 |------|---------|
-| `mix ash_events_projections.lag` | Print a snapshot of projector lag, status, and DLQ depth. The `--watch` flag refreshes every 5s. |
-| `mix ash_events_projections.bootstrap --projection=<name>` | One-shot replay from id 0 for a brand-new projector being deployed for the first time. Acquires the rebuild advisory lock; fails fast if a rebuild is in progress. |
+| `mix ash_events_projections.lag` | Print a snapshot of projector lag, status, leader node, checkpoint, head id, and DLQ depth. |
+| `mix ash_events_projections.bootstrap --projection=<name>` | Reset the checkpoint to 0 and drain synchronously, leaving stats rows in place. For a brand-new projector being deployed for the first time; use `rebuild` when stats rows already exist. |
 | `mix ash_events_projections.rebuild --projection=<name>` | Truncate the stats table and replay the entire event log. Use after fixing a projector's logic. |
 | `mix ash_events_projections.reset --projection=<name>` | Zero the projector's checkpoint without touching stats. Rarely needed — usually `rebuild` is what you want. |
 | `mix ash_events_projections.verify [--projection=<name>]` | Audit projection rows against the event log by running the projector logic in dry-run mode. Reports drift. |
