@@ -29,7 +29,6 @@ defmodule AshEvents.Projections.Server do
 
   use GenServer
   import Ecto.Query
-  require Ash.Query
   require Logger
 
   alias AshEvents.Projections.{Checkpoint, DeadLetter, Registry}
@@ -306,7 +305,6 @@ defmodule AshEvents.Projections.Server do
   # rows visible instead of silently growing the atom table.
   defp to_atom(s) when is_binary(s), do: String.to_existing_atom(s)
   defp to_atom(a) when is_atom(a), do: a
-  defp to_atom(nil), do: nil
 
   defp get_or_create_checkpoint(projector) do
     {:ok, cp} = Checkpoint.initialize(projector.__projector_name__())

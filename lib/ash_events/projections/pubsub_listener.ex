@@ -20,8 +20,6 @@ defmodule AshEvents.Projections.PubSubListener do
 
   alias AshEvents.Projections.{Config, Server}
 
-  require Logger
-
   def child_spec(opts) do
     %{
       id: __MODULE__,

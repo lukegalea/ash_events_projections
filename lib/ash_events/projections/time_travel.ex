@@ -148,5 +148,4 @@ defmodule AshEvents.Projections.TimeTravel do
 
   defp to_atom(s) when is_binary(s), do: String.to_atom(s)
   defp to_atom(a) when is_atom(a), do: a
-  defp to_atom(nil), do: nil
 end
