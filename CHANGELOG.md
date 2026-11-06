@@ -16,6 +16,8 @@ the API stabilizes.
 
 ## [Unreleased]
 
+- Requires Elixir 1.20 or later.
+
 ### Added
 - Initial extraction from ScribbleVet into a standalone Ash extension.
 - `AshEvents.Projections.Projector` DSL for defining event-driven projectors with

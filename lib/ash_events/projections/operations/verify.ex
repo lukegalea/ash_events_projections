@@ -282,5 +282,4 @@ defmodule AshEvents.Projections.Operations.Verify do
   # Use to_existing_atom/1 — see AshEvents.Projections.Server.to_atom/1.
   defp to_atom(s) when is_binary(s), do: String.to_existing_atom(s)
   defp to_atom(a) when is_atom(a), do: a
-  defp to_atom(nil), do: nil
 end
