@@ -194,7 +194,7 @@ defmodule AshEvents.Projections.Projector do
   defp build_stateless_clause({nil, action, fn_ast, _}) do
     quote do
       def handle_event(%{action: unquote(action)} = event) do
-        AshEvents.Projections.Projector.handler_result(unquote(fn_ast).(event))
+        unquote(__MODULE__).handler_result(unquote(fn_ast).(event))
       end
     end
   end
@@ -202,7 +202,7 @@ defmodule AshEvents.Projections.Projector do
   defp build_stateless_clause({resource, action, fn_ast, _}) do
     quote do
       def handle_event(%{resource: unquote(resource), action: unquote(action)} = event) do
-        AshEvents.Projections.Projector.handler_result(unquote(fn_ast).(event))
+        unquote(__MODULE__).handler_result(unquote(fn_ast).(event))
       end
     end
   end
@@ -210,7 +210,7 @@ defmodule AshEvents.Projections.Projector do
   defp build_stateful_clause({nil, action, fn_ast, _}) do
     quote do
       def handle_event(%{action: unquote(action)} = event, current_row) do
-        AshEvents.Projections.Projector.handler_result(unquote(fn_ast).(event, current_row))
+        unquote(__MODULE__).handler_result(unquote(fn_ast).(event, current_row))
       end
     end
   end
@@ -221,7 +221,7 @@ defmodule AshEvents.Projections.Projector do
             %{resource: unquote(resource), action: unquote(action)} = event,
             current_row
           ) do
-        AshEvents.Projections.Projector.handler_result(unquote(fn_ast).(event, current_row))
+        unquote(__MODULE__).handler_result(unquote(fn_ast).(event, current_row))
       end
     end
   end
