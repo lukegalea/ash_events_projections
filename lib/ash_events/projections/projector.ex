@@ -153,6 +153,15 @@ defmodule AshEvents.Projections.Projector do
     end
   end
 
+  @doc false
+  # The generated `handle_event` clauses route a handler's return value through
+  # here. A non-empty list of operations is applied; anything else skips the
+  # event. Matching in a function rather than inline keeps the compiler's type
+  # checker from flagging the fallback clause when a handler returns a constant.
+  @spec handler_result(term()) :: {:ok, nonempty_list(term())} | :skip
+  def handler_result(ops) when is_list(ops) and ops != [], do: {:ok, ops}
+  def handler_result(_other), do: :skip
+
   defmacro __before_compile__(env) do
     grain_fn_ast = Module.get_attribute(env.module, :grain_fn)
     handlers = Module.get_attribute(env.module, :projection_handlers)
@@ -185,10 +194,7 @@ defmodule AshEvents.Projections.Projector do
   defp build_stateless_clause({nil, action, fn_ast, _}) do
     quote do
       def handle_event(%{action: unquote(action)} = event) do
-        case unquote(fn_ast).(event) do
-          ops when is_list(ops) and ops != [] -> {:ok, ops}
-          _ -> :skip
-        end
+        AshEvents.Projections.Projector.handler_result(unquote(fn_ast).(event))
       end
     end
   end
@@ -196,10 +202,7 @@ defmodule AshEvents.Projections.Projector do
   defp build_stateless_clause({resource, action, fn_ast, _}) do
     quote do
       def handle_event(%{resource: unquote(resource), action: unquote(action)} = event) do
-        case unquote(fn_ast).(event) do
-          ops when is_list(ops) and ops != [] -> {:ok, ops}
-          _ -> :skip
-        end
+        AshEvents.Projections.Projector.handler_result(unquote(fn_ast).(event))
       end
     end
   end
@@ -207,10 +210,7 @@ defmodule AshEvents.Projections.Projector do
   defp build_stateful_clause({nil, action, fn_ast, _}) do
     quote do
       def handle_event(%{action: unquote(action)} = event, current_row) do
-        case unquote(fn_ast).(event, current_row) do
-          ops when is_list(ops) and ops != [] -> {:ok, ops}
-          _ -> :skip
-        end
+        AshEvents.Projections.Projector.handler_result(unquote(fn_ast).(event, current_row))
       end
     end
   end
@@ -221,10 +221,7 @@ defmodule AshEvents.Projections.Projector do
             %{resource: unquote(resource), action: unquote(action)} = event,
             current_row
           ) do
-        case unquote(fn_ast).(event, current_row) do
-          ops when is_list(ops) and ops != [] -> {:ok, ops}
-          _ -> :skip
-        end
+        AshEvents.Projections.Projector.handler_result(unquote(fn_ast).(event, current_row))
       end
     end
   end
