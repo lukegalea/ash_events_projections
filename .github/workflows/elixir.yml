@@ -66,6 +66,27 @@ jobs:
       - run: mix test.migrate
       - run: mix test
 
+  # Warnings are errors (AST-181 H-02). Dependencies compile in their own
+  # invocation so a dependency's warning cannot turn into a red build of ours.
+  compile-warnings:
+    name: mix compile --warnings-as-errors
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        mix-env: [test, dev]
+    env:
+      MIX_ENV: ${{ matrix.mix-env }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: "27.3.4"
+          elixir-version: "1.20.4"
+      - run: mix deps.get
+      - run: mix deps.compile
+      - run: mix compile --force --warnings-as-errors
+
   docs:
     name: Build docs
     runs-on: ubuntu-latest
