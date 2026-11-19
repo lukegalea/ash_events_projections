@@ -13,7 +13,6 @@ defmodule Mix.Tasks.AshEventsProjections.Gaps do
   Most gaps are benign rolled-back inserts. A run of large gaps that grow
   over time may indicate at-least-once delivery problems or manual deletes.
 
-  See `backend/docs/runbooks/06-gap-detection.md`.
   """
 
   use Mix.Task

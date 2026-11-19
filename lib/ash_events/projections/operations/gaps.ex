@@ -23,7 +23,6 @@ defmodule AshEvents.Projections.Operations.Gaps do
   detection because false positives from rolled-back inserts would be too
   noisy.
 
-  See `backend/docs/runbooks/06-gap-detection.md`.
   """
 
   alias AshEvents.Projections.Config

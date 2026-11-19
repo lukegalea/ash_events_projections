@@ -12,8 +12,7 @@ defmodule Mix.Tasks.AshEventsProjections.Verify do
 
   Exits with status 1 if any drift is detected so CI can gate on it.
 
-  Originally bisected the silent metadata-mismatch bug fixed in commit
-  `5772b196` — keep running it after any change to source-resource events.
+  Keep running it after any change to source-resource events.
   """
 
   use Mix.Task

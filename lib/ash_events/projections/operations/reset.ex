@@ -13,7 +13,6 @@ defmodule AshEvents.Projections.Operations.Reset do
   force a freshly-deployed projector to re-walk from event 0 because some
   earlier events were ingested while the projector was misconfigured).
 
-  See `backend/docs/runbooks/11-reset-checkpoint.md`.
   """
 
   alias AshEvents.Projections.{Checkpoint, Server}

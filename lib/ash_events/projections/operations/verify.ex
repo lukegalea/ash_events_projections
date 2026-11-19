@@ -15,13 +15,11 @@ defmodule AshEvents.Projections.Operations.Verify do
   ## Why this exists
 
   Catches the silent-drift class of bug where real events arrive with
-  different metadata than the projector's tests expect. The
-  `NoteArtifact.create_empty` regression fixed in commit `5772b196` is the
-  flagship example — synthetic factory events worked fine while production
-  events hit an empty `metadata` map and were silently skipped. A regular
+  different metadata than the projector's tests expect. For example,
+  synthetic factory events can work fine while production events arrive
+  with an empty `metadata` map and are silently skipped. A regular
   verify run flags the discrepancy in seconds.
 
-  See `backend/docs/runbooks/09-verify-projection-completeness.md`.
   """
 
   alias AshEvents.Projections.{Config, Server}

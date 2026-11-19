@@ -9,7 +9,6 @@ defmodule AshEvents.Projections.Operations.EventGrowth do
   Pure read-only probe. Use as a periodic (weekly) operational signal —
   unbounded growth here means archival/retention work is overdue.
 
-  See `backend/docs/runbooks/12-storage-growth.md`.
   """
 
   alias AshEvents.Projections.Config
