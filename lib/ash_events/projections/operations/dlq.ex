@@ -23,7 +23,6 @@ defmodule AshEvents.Projections.Operations.Dlq do
   This avoids the double-count risk of rewinding the checkpoint (which would
   re-process every event since the failure, including ones that succeeded).
 
-  See `backend/docs/runbooks/05-dlq-inspect-and-replay.md`.
   """
 
   alias AshEvents.Projections.{Config, DeadLetter, Server}

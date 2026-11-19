@@ -36,9 +36,6 @@ defmodule AshEvents.Projections.Rebuilder do
   at a shadow table. The two projectors run side-by-side; flip your reads to
   the new one when ready.
 
-  See `backend/docs/runbooks/02-in-place-rebuild.md` and
-  `backend/docs/runbooks/03-blue-green-rebuild.md` for the full operational
-  procedures.
   """
 
   alias AshEvents.Projections.{Checkpoint, Registry, Server}

@@ -9,8 +9,7 @@ defmodule AshEvents.Projections.TimeTravel do
   timestamp.
 
   Powers `mix ash_events_projections.lag` ad-hoc debugging and the
-  "what was this counter on date X?" workflow described in
-  `backend/docs/runbooks/07-temporal-queries.md`.
+  "what was this counter on date X?" workflow.
 
   Costs O(events-up-to-timestamp) so don't use this on hot paths — it is a
   diagnostic tool, not an alternative to the live projection table.

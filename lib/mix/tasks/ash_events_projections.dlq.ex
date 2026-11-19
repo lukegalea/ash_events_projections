@@ -18,7 +18,6 @@ defmodule Mix.Tasks.AshEventsProjections.Dlq do
   own transactions WITHOUT rolling back the global checkpoint, so events
   that succeeded after the original failure are not double-counted.
 
-  See `backend/docs/runbooks/05-dlq-inspect-and-replay.md`.
   """
 
   use Mix.Task

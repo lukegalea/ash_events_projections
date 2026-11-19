@@ -27,7 +27,6 @@ defmodule AshEvents.Projections.Operations.Bootstrap do
   slate; this operation is for "additive" backfills like a brand-new
   projection or a brand-new field on an existing one.
 
-  See `backend/docs/runbooks/01-bootstrap-new-projection.md`.
   """
 
   alias AshEvents.Projections.{Checkpoint, Server}

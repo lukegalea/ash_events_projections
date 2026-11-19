@@ -38,7 +38,7 @@ Each projector:
 - isolates failed events in a per-projector dead-letter queue,
 - can be rebuilt, replayed, time-traveled, and verified with built-in tools.
 
-The same engine powers all four projectors in ScribbleVet's production setup
+The same engine powers four projectors in a production host app
 (practice usage, membership usage, user lifetime, member-daily) on top of a
 shared `ash_events` log.
 

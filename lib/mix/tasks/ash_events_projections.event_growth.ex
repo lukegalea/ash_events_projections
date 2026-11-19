@@ -10,7 +10,6 @@ defmodule Mix.Tasks.AshEventsProjections.EventGrowth do
       mix ash_events_projections.event_growth
       mix ash_events_projections.event_growth --days=90
 
-  See `backend/docs/runbooks/12-storage-growth.md`.
   """
 
   use Mix.Task

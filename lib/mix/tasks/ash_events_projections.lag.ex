@@ -9,8 +9,7 @@ defmodule Mix.Tasks.AshEventsProjections.Lag do
 
       mix ash_events_projections.lag
 
-  Same data the `GET /health/projections` endpoint exposes — see
-  `backend/docs/runbooks/08-observability-lag-and-health.md`.
+  Same data a host's projection health endpoint would expose.
   """
 
   use Mix.Task

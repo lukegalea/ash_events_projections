@@ -13,8 +13,6 @@ defmodule Mix.Tasks.AshEventsProjections.Reset do
   you actually want `mix ash_events_projections.rebuild`, which truncates
   first.
 
-  See `backend/docs/runbooks/11-reset-checkpoint.md` for the exact decision
-  matrix.
   """
 
   use Mix.Task
