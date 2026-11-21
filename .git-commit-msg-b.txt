@@ -1,0 +1,14 @@
+Read the event log through one EventRow module with a configurable partition column
+
+The Server drain, Verify, Dlq and TimeTravel each duplicated the same
+schemaless select and row normalization. AshEvents.Projections.EventRow now
+owns both halves: query/2 selects the engine columns and casts the partition
+value to text in SQL, normalize/2 hands handlers an event keyed by the
+projector's configured column.
+
+Projectors gain an optional partition_column: use option (default
+:practice_id) surfaced as __partition_column__/0; with the default the
+engine behaves exactly as before. Dlq and TimeTravel also drop their
+String.to_atom normalization in favor of the shared String.to_existing_atom
+one. Test fixtures add a tenant_ref text column plus a tenant-partitioned
+projector and a usage_v2 shadow twin with its own table.

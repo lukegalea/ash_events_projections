@@ -118,3 +118,79 @@ defmodule AshEvents.Projections.TestApp.Projectors.Failing do
   @doc "Flip the simulated bug on/off (defaults to off)."
   def set_explode?(value), do: :persistent_term.put(@switch, value)
 end
+
+defmodule AshEvents.Projections.TestApp.Projectors.UsageV2 do
+  @moduledoc """
+  Shadow twin of `Usage`: same family (`test_practice_usage`), same handlers,
+  but name `test_practice_usage_v2` and its own projection table, so promotion
+  tests can run it alongside the live v1 projector.
+  """
+
+  use AshEvents.Projections.Projector,
+    name: "test_practice_usage_v2",
+    event_log: AshEvents.Projections.TestApp.Events.Event,
+    projection_resource: AshEvents.Projections.TestApp.Projections.PracticeUsageStatsV2
+
+  grain(fn event ->
+    with practice_id when not is_nil(practice_id) <- event.practice_id,
+         period when not is_nil(period) <- event.metadata["billing_period_start"] do
+      %{practice_id: practice_id, billing_period_start: Date.from_iso8601!(period)}
+    end
+  end)
+
+  project(:note_created, fn _event ->
+    [{:increment, :notes_count, 1}]
+  end)
+
+  project(AshEvents.Projections.TestApp.Accounts.User, :care_card_created, fn _event ->
+    [{:increment, :care_cards_count, 1}]
+  end)
+
+  project(AshEvents.Projections.TestApp.Accounts.User, :note_deleted, fn _event ->
+    [{:decrement, :notes_count, 1}]
+  end)
+
+  project(AshEvents.Projections.TestApp.Accounts.User, :session_closed, fn event ->
+    [{:set, :last_activity_at, event.occurred_at}]
+  end)
+
+  project(AshEvents.Projections.TestApp.Accounts.User, :peak_reached, fn event ->
+    [{:max, :peak_notes, event.data["count"] || 0}]
+  end)
+
+  project(AshEvents.Projections.TestApp.Accounts.User, :ignored_action, fn _event ->
+    nil
+  end)
+end
+
+defmodule AshEvents.Projections.TestApp.Projectors.TenantUsage do
+  @moduledoc """
+  Projector configured with `partition_column: :tenant_ref`: its handlers and
+  grain receive `event.tenant_ref` and no `event.practice_id`. Carries the
+  same `explode?` switch as `Failing` so DLQ tests can exercise replay through
+  a non-default partition column.
+  """
+
+  use AshEvents.Projections.Projector,
+    name: "test_tenant_usage_v1",
+    event_log: AshEvents.Projections.TestApp.Events.Event,
+    projection_resource: AshEvents.Projections.TestApp.Projections.TenantUsageStats,
+    partition_column: :tenant_ref
+
+  @switch {:__MODULE__, :explode?}
+
+  grain(fn event -> event.tenant_ref end)
+
+  project(:note_created, fn _event ->
+    [{:increment, :notes_count, 1}]
+  end)
+
+  project(:explode, fn _event ->
+    if :persistent_term.get(@switch, false), do: raise("simulated projector crash")
+
+    [{:increment, :notes_count, 1}]
+  end)
+
+  @doc "Flip the simulated bug on/off (defaults to off)."
+  def set_explode?(value), do: :persistent_term.put(@switch, value)
+end

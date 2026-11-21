@@ -31,7 +31,7 @@ defmodule AshEvents.Projections.Server do
   import Ecto.Query
   require Logger
 
-  alias AshEvents.Projections.{Checkpoint, DeadLetter, Registry}
+  alias AshEvents.Projections.{Checkpoint, DeadLetter, EventRow, Registry}
   alias AshEvents.Projections.Config
 
   @batch_size 500
@@ -115,26 +115,15 @@ defmodule AshEvents.Projections.Server do
   defp do_drain(projector) do
     checkpoint = get_or_create_checkpoint(projector)
     after_id = checkpoint.last_seen_event_id || 0
+    partition_column = projector.__partition_column__()
 
     batch =
-      from(e in Config.event_table(),
-        select: %{
-          id: e.id,
-          practice_id: e.practice_id,
-          user_id: e.user_id,
-          occurred_at: e.occurred_at,
-          metadata: e.metadata,
-          data: e.data,
-          resource: e.resource,
-          action: e.action,
-          action_type: e.action_type
-        },
-        where: e.id > ^after_id,
-        order_by: [asc: e.id],
-        limit: @batch_size
-      )
+      Config.event_table()
+      |> EventRow.query(partition_column)
+      |> where([e], e.id > ^after_id)
+      |> limit(^@batch_size)
       |> Config.repo().all()
-      |> Enum.map(&normalize_event_row/1)
+      |> Enum.map(&EventRow.normalize(&1, partition_column))
 
     case batch do
       [] ->
@@ -273,38 +262,6 @@ defmodule AshEvents.Projections.Server do
     [grain_field] = resource.__projection_grain_fields__()
     Ash.create!(resource, %{grain_field => grain_key}, action: :upsert_grain, authorize?: false)
   end
-
-  defp normalize_event_row(row) do
-    %{
-      id: row.id,
-      practice_id: uuid_to_string(row.practice_id),
-      user_id: uuid_to_string(row.user_id),
-      occurred_at: row.occurred_at,
-      metadata: row.metadata || %{},
-      data: row.data || %{},
-      resource: to_atom(row.resource),
-      action: to_atom(row.action),
-      action_type: to_atom(row.action_type)
-    }
-  end
-
-  # Postgrex returns PostgreSQL uuid columns as raw 16-byte binaries when querying
-  # without a schema (as Server.drain does via `from(e in "ash_events", ...)`).
-  defp uuid_to_string(nil), do: nil
-
-  defp uuid_to_string(uuid) when is_binary(uuid) and byte_size(uuid) == 16 do
-    {:ok, s} = Ecto.UUID.load(uuid)
-    s
-  end
-
-  defp uuid_to_string(uuid), do: uuid
-
-  # Use to_existing_atom/1: every legitimate value here is a module or action
-  # name that has already been loaded (resources are compiled at boot, actions
-  # are atoms in the resource DSL). Raising on unknown strings keeps malformed
-  # rows visible instead of silently growing the atom table.
-  defp to_atom(s) when is_binary(s), do: String.to_existing_atom(s)
-  defp to_atom(a) when is_atom(a), do: a
 
   defp get_or_create_checkpoint(projector) do
     {:ok, cp} = Checkpoint.initialize(projector.__projector_name__())

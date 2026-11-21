@@ -22,9 +22,7 @@ defmodule AshEvents.Projections.Operations.Verify do
 
   """
 
-  alias AshEvents.Projections.{Config, Server}
-
-  import Ecto.Query
+  alias AshEvents.Projections.{Config, EventRow, Server}
 
   @type drift :: %{
           projection_name: String.t(),
@@ -81,11 +79,12 @@ defmodule AshEvents.Projections.Operations.Verify do
   defp recompute(projector_module) do
     grain_fn = projector_module.__grain__()
     grain_fields = projector_module.__projection_resource__().__projection_grain_fields__()
+    partition_column = projector_module.__partition_column__()
 
     Config.event_table()
-    |> select_all_event_columns()
+    |> EventRow.query(partition_column)
     |> Config.repo().all()
-    |> Enum.map(&normalize/1)
+    |> Enum.map(&EventRow.normalize(&1, partition_column))
     |> Enum.reduce(%{}, fn event, acc ->
       fold_event(projector_module, grain_fn, grain_fields, event, acc)
     end)
@@ -234,50 +233,4 @@ defmodule AshEvents.Projections.Operations.Verify do
       is_integer(v) && v != 0
     end)
   end
-
-  # --- Event loading ---
-
-  defp select_all_event_columns(table) do
-    from(e in table,
-      select: %{
-        id: e.id,
-        practice_id: e.practice_id,
-        user_id: e.user_id,
-        occurred_at: e.occurred_at,
-        metadata: e.metadata,
-        data: e.data,
-        resource: e.resource,
-        action: e.action,
-        action_type: e.action_type
-      },
-      order_by: [asc: e.id]
-    )
-  end
-
-  defp normalize(row) do
-    %{
-      id: row.id,
-      practice_id: uuid_to_string(row.practice_id),
-      user_id: uuid_to_string(row.user_id),
-      occurred_at: row.occurred_at,
-      metadata: row.metadata || %{},
-      data: row.data || %{},
-      resource: to_atom(row.resource),
-      action: to_atom(row.action),
-      action_type: to_atom(row.action_type)
-    }
-  end
-
-  defp uuid_to_string(nil), do: nil
-
-  defp uuid_to_string(uuid) when is_binary(uuid) and byte_size(uuid) == 16 do
-    {:ok, s} = Ecto.UUID.load(uuid)
-    s
-  end
-
-  defp uuid_to_string(uuid), do: uuid
-
-  # Use to_existing_atom/1 — see AshEvents.Projections.Server.to_atom/1.
-  defp to_atom(s) when is_binary(s), do: String.to_existing_atom(s)
-  defp to_atom(a) when is_atom(a), do: a
 end

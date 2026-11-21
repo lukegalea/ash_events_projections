@@ -45,11 +45,15 @@ writes the config block and adds the supervisor.
   `Server.flush/1`, and after a rebuild, reset or bootstrap; there is no
   polling, so without it new events are not projected until one of those
   happens.
-- The engine reads the event table with schemaless queries that select
-  `id, practice_id, user_id, occurred_at, metadata, data, resource, action,
-  action_type`. The table must have a `practice_id` column as well as the
+- The engine reads the event table with schemaless queries that select the
+  configured partition column plus `id, user_id, occurred_at, metadata, data,
+  resource, action, action_type`. The table must have a partition column —
+  `practice_id` by default, configurable per projector with
+  `partition_column:` (e.g. `partition_column: :tenant_ref`) — as well as the
   AshEvents columns; `AshEvents.Projections.Events.Changes.ExtractMetadataFields`
-  can fill it from `metadata`.
+  can fill it from `metadata`. Handlers and grain functions receive the value
+  under the configured column name (`event.practice_id` or
+  `event.tenant_ref`).
 
 ## Defining a projection target
 
