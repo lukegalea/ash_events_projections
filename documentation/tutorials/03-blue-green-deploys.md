@@ -58,22 +58,28 @@ end
 
 `grain_fields` must match the live resource or `Verify.compare/3` returns
 `{:error, :grain_mismatch}`. Generate the migration for the new table with
-`mix ash_postgres.generate_migrations`, and add the module to `projectors` in
-config.
+`mix ash_postgres.generate_migrations`. Do not add the module to `projectors`
+yet (see step 2).
 
-## 2. Mark the shadow
+## 2. Mark the shadow, then start it
 
-```sh
-mix ash_events_projections.shadow --projection=usage_v2
+Mark the projector `:shadow` **before** its Server starts, so the Server
+never boots as a second serving projector. From a console on the deployed
+code (the module is compiled but not yet in `projectors`):
+
+```elixir
+AshEvents.Projections.Promotion.build_shadow!(MyApp.Projections.UsageProjectorV2)
 ```
 
-This wraps `AshEvents.Projections.Promotion.build_shadow!/1`: it marks the
-projector `:shadow` in the registry under the family advisory lock, then
-notifies the Server. The registry row is an upsert, so the status survives
-reboots: you can run `build_shadow!/1` from a console **before** deploying
-the new module, and the Server boots straight into `:shadow` and builds from
-event 0. `:shadow` rows drain normally — only `:rebuilding` short-circuits
-the Server.
+This marks the projector `:shadow` in the registry under the family advisory
+lock and notifies the Server. Then add the module to `projectors` and
+restart: the Server's registry upsert leaves the `:shadow` status alone, so
+it boots into `:shadow` and builds from event 0. `:shadow` rows drain
+normally; only `:rebuilding` short-circuits the Server.
+
+When the module is already in `projectors` (for example a shadow rebuilt
+after a handler fix), `mix ash_events_projections.shadow --projection=usage_v2`
+does the same marking from the command line.
 
 ## 3. Wait for catch-up, then verify
 
