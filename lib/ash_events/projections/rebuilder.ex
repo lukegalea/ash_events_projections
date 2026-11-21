@@ -16,7 +16,8 @@ defmodule AshEvents.Projections.Rebuilder do
      observes the rebuilding flag and returns early.
   4. Truncating the stats table.
   5. Resetting the checkpoint.
-  6. Flipping status back to `:active`.
+  6. Restoring the status captured in step 2 (`:active` for a live
+     projector; `:shadow`/`:retired` rows keep their prior status).
   7. Notifying the Server to begin replay.
 
   We deliberately do NOT call `GenServer.stop/1` on the Server — that would
@@ -29,13 +30,12 @@ defmodule AshEvents.Projections.Rebuilder do
   + reset steps. Other cluster nodes wait inside `pg_advisory_xact_lock`
   until the current rebuild commits.
 
-  ## Versioned (blue/green) rebuilds
+  ## Side-by-side rebuilds
 
-  Pass a different `projector_module` whose `__projector_name__/0` returns a
-  new version (e.g. `usage_v2`) and whose `__projection_resource__/0` points
-  at a shadow table. The two projectors run side-by-side; flip your reads to
-  the new one when ready.
-
+  To rebuild without stopping the live projector, build a shadow copy with a
+  versioned name (`usage_v2`) and promote it atomically — see
+  `AshEvents.Projections.Promotion` and
+  `mix ash_events_projections.shadow`.
   """
 
   alias AshEvents.Projections.{Checkpoint, Registry, Server}
@@ -59,14 +59,15 @@ defmodule AshEvents.Projections.Rebuilder do
     # whether the last expression is itself an :error tuple, so unwrap both
     # layers — otherwise a failed mark_rebuilding/1 would silently let the
     # Server keep draining while we truncate.
-    {:ok, :ok} =
+    {:ok, prior_status} =
       Config.repo().transaction(fn ->
         acquire_lock!(name)
 
         {:ok, _} = Registry.initialize(name)
         registry = Ash.get!(Registry, name, authorize?: false)
+        prior_status = registry.status
         {:ok, _} = Registry.mark_rebuilding(registry)
-        :ok
+        prior_status
       end)
 
     # Drain in-flight events so they finish committing under the OLD checkpoint
@@ -82,7 +83,7 @@ defmodule AshEvents.Projections.Rebuilder do
     end
 
     {:ok, registry} = Ash.get(Registry, name, authorize?: false)
-    Registry.mark_active(registry)
+    restore_status!(registry, prior_status)
 
     Server.notify(name)
 
@@ -90,6 +91,14 @@ defmodule AshEvents.Projections.Rebuilder do
 
     :ok
   end
+
+  # A rebuild must not promote a shadow or retired projector to serving: it
+  # restores whatever status the row had before the rebuild flipped it to
+  # :rebuilding.
+  defp restore_status!(registry, :active), do: Registry.mark_active!(registry)
+  defp restore_status!(registry, :shadow), do: Registry.mark_shadow!(registry)
+  defp restore_status!(registry, :retired), do: Registry.mark_retired!(registry)
+  defp restore_status!(registry, :rebuilding), do: Registry.mark_rebuilding!(registry)
 
   # Postgres advisory locks are scoped to the calling transaction; this is
   # safer than session-scoped locks because the lock is automatically released

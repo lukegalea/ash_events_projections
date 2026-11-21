@@ -22,6 +22,7 @@ defmodule AshEvents.Projections.Operations.Verify do
 
   """
 
+  alias Ash.Resource.Info
   alias AshEvents.Projections.{Config, EventRow, Server}
 
   @type drift :: %{
@@ -37,6 +38,21 @@ defmodule AshEvents.Projections.Operations.Verify do
           checked_rows: non_neg_integer(),
           expected_rows: non_neg_integer(),
           drifts: [drift()]
+        }
+
+  @type difference :: %{
+          grain: map(),
+          field: atom(),
+          shadow: term(),
+          live: term()
+        }
+
+  @type comparison :: %{
+          shadow: String.t(),
+          live: String.t(),
+          shadow_rows: non_neg_integer(),
+          live_rows: non_neg_integer(),
+          differences: [difference()]
         }
 
   @doc """
@@ -72,6 +88,100 @@ defmodule AshEvents.Projections.Operations.Verify do
   def run_all(opts \\ []) do
     Config.projectors()
     |> Enum.map(&run(&1, opts))
+  end
+
+  @doc """
+  Compares a shadow projection table against the live one, row by row.
+
+  Options:
+
+    * `:flush` — when `true` (default), calls `Server.flush/1` on both
+      projectors before snapshotting.
+
+  Both projection resources must declare the same `__projection_grain_fields__`,
+  else `{:error, :grain_mismatch}`. The comparison covers the attributes both
+  resources share, excluding `:id`, `:inserted_at` and `:updated_at`. A grain
+  present on one side only is one difference with `field: :__row__` and
+  `:present`/`:missing` values.
+  """
+  @spec compare(module(), module(), keyword()) :: comparison() | {:error, :grain_mismatch}
+  def compare(shadow_module, live_module, opts \\ []) do
+    shadow_name = shadow_module.__projector_name__()
+    live_name = live_module.__projector_name__()
+
+    if Keyword.get(opts, :flush, true) do
+      Server.flush(shadow_name)
+      Server.flush(live_name)
+    end
+
+    shadow_fields = shadow_module.__projection_resource__().__projection_grain_fields__()
+    live_fields = live_module.__projection_resource__().__projection_grain_fields__()
+
+    if shadow_fields != live_fields do
+      {:error, :grain_mismatch}
+    else
+      shadow_rows = load_projection_rows(shadow_module)
+      live_rows = load_projection_rows(live_module)
+
+      shared_fields =
+        shared_attributes(
+          shadow_module.__projection_resource__(),
+          live_module.__projection_resource__()
+        )
+
+      %{
+        shadow: shadow_name,
+        live: live_name,
+        shadow_rows: map_size(shadow_rows),
+        live_rows: map_size(live_rows),
+        differences: diff_tables(shadow_rows, live_rows, shared_fields)
+      }
+    end
+  end
+
+  # --- Table comparison (shadow vs live) ---
+
+  # Attributes both resources declare, minus the surrogate key and the
+  # timestamps: those always differ between two physically separate tables.
+  defp shared_attributes(shadow_resource, live_resource) do
+    excluded = [:id, :inserted_at, :updated_at]
+
+    shadow_names =
+      shadow_resource
+      |> Info.attributes()
+      |> Enum.map(& &1.name)
+
+    live_resource
+    |> Info.attributes()
+    |> Enum.map(& &1.name)
+    |> MapSet.new()
+    |> MapSet.intersection(MapSet.new(shadow_names))
+    |> MapSet.difference(MapSet.new(excluded))
+    |> MapSet.to_list()
+  end
+
+  defp diff_tables(shadow_rows, live_rows, fields) do
+    (Map.keys(shadow_rows) ++ Map.keys(live_rows))
+    |> Enum.uniq()
+    |> Enum.flat_map(&diff_grain_pair(&1, shadow_rows, live_rows, fields))
+  end
+
+  defp diff_grain_pair(grain, shadow_rows, live_rows, fields) do
+    case {Map.get(shadow_rows, grain), Map.get(live_rows, grain)} do
+      {_shadow_row, nil} ->
+        [%{grain: grain, field: :__row__, shadow: :present, live: :missing}]
+
+      {nil, _live_row} ->
+        [%{grain: grain, field: :__row__, shadow: :missing, live: :present}]
+
+      {shadow_row, live_row} ->
+        for field <- fields,
+            shadow_val = Map.get(shadow_row, field),
+            live_val = Map.get(live_row, field),
+            shadow_val != live_val do
+          %{grain: grain, field: field, shadow: shadow_val, live: live_val}
+        end
+    end
   end
 
   # --- Recompute ---

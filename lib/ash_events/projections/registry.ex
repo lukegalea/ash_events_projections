@@ -9,12 +9,21 @@ defmodule AshEvents.Projections.Registry do
   Tracks two things that the in-memory `Server` GenServer cannot persist
   across crashes:
 
-  - `status` (`:active` or `:rebuilding`) — `Server.drain` checks this
-    before applying ops; while `:rebuilding`, the Server short-circuits so
-    a concurrent rebuild can truncate stats safely without races.
-  - `version` — integer that lets blue/green rebuilds run a shadow
-    projector with a separate `projection_name` (e.g. `usage_v1` /
-    `usage_v2`) without colliding on grain rows.
+  - `status` — how the projector participates in draining:
+
+    * `:active` — serving reads; the Server drains normally.
+    * `:shadow` — building from the event log, not serving; the Server still
+      drains (see `AshEvents.Projections.Promotion.build_shadow!/1`).
+    * `:retired` — a former live projector kept up to date so rollback is
+      instant; the Server still drains.
+    * `:rebuilding` — an in-place rebuild is running; `Server.drain`
+      short-circuits so a concurrent rebuild can truncate stats safely
+      without races.
+
+    Only `:rebuilding` short-circuits the drain.
+  - `version` — counts how many times this row has been promoted to serving
+    (`AshEvents.Projections.Promotion.promote/3` bumps it; a fresh row
+    starts at 1).
 
   One row per projector. Initialized lazily by `Server.init/1` and the
   `Rebuilder`. Pair with `pg_advisory_xact_lock` keyed on `name` to serialize
@@ -27,7 +36,7 @@ defmodule AshEvents.Projections.Registry do
     attribute :name, :string, primary_key?: true, allow_nil?: false, public?: true
 
     attribute :status, :atom,
-      constraints: [one_of: [:active, :rebuilding]],
+      constraints: [one_of: [:active, :rebuilding, :shadow, :retired]],
       default: :active,
       allow_nil?: false,
       public?: true
@@ -60,6 +69,14 @@ defmodule AshEvents.Projections.Registry do
       change set_attribute(:status, :active)
     end
 
+    update :mark_shadow do
+      change set_attribute(:status, :shadow)
+    end
+
+    update :mark_retired do
+      change set_attribute(:status, :retired)
+    end
+
     update :bump_version do
       change atomic_update(:version, expr(version + 1))
     end
@@ -69,6 +86,8 @@ defmodule AshEvents.Projections.Registry do
     define :initialize, args: [:name]
     define :mark_rebuilding
     define :mark_active
+    define :mark_shadow
+    define :mark_retired
     define :bump_version
   end
 end

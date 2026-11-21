@@ -128,6 +128,7 @@ defmodule AshEvents.Projections.MixProject do
           AshEvents.Projections.Operations.Gaps,
           AshEvents.Projections.Operations.Reset,
           AshEvents.Projections.Operations.Verify,
+          AshEvents.Projections.Promotion,
           AshEvents.Projections.Rebuilder,
           AshEvents.Projections.Lag,
           AshEvents.Projections.TimeTravel
