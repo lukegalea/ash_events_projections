@@ -86,8 +86,10 @@ project MyApp.SomeResource, :some_action, fn event ->
 end
 ```
 
-- The `name` must be unique and SHOULD be versioned (`_v1`, `_v2`) so a future
-  rebuild can run side-by-side as a blue/green deploy.
+- The `name` must be unique and SHOULD be versioned (`_v1`, `_v2`). The
+  trailing `_v<digits>` suffix defines the projector's family, which lets a
+  rebuild run side-by-side as a shadow (`mix ash_events_projections.shadow`)
+  and be promoted atomically — see `AshEvents.Projections.Promotion`.
 - `event_log:` and `projection_resource:` are required `use` options; the
   `event_log` app config does not fill them in.
 - `grain` takes a function (event → grain map, or a bare value for a

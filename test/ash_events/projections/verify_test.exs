@@ -9,8 +9,10 @@ defmodule AshEvents.Projections.VerifyTest do
 
   alias AshEvents.Projections.Operations.Verify
   alias AshEvents.Projections.TestApp.Projections.PracticeUsageStats
+  alias AshEvents.Projections.TestApp.Projections.PracticeUsageStatsV2
   alias AshEvents.Projections.TestApp.Projections.UserLifetimeStats
   alias AshEvents.Projections.TestApp.Projectors.Usage
+  alias AshEvents.Projections.TestApp.Projectors.UsageV2
   alias AshEvents.Projections.TestApp.Projectors.UserLifetime
 
   import AshEvents.Projections.TestApp.EventFactory
@@ -112,7 +114,7 @@ defmodule AshEvents.Projections.VerifyTest do
     assert [%{field: :__row__, expected: :missing, actual: :present}] = result.drifts
   end
 
-  test "ignores extra rows whose counters are all zero", %{practice_id: practice_id} do
+  test "ignores extra rows whose counters are all zero", %{practice_id: _practice_id} do
     PracticeUsageStats
     |> Ash.Changeset.for_create(:upsert_grain, %{
       practice_id: Ecto.UUID.generate(),
@@ -165,5 +167,51 @@ defmodule AshEvents.Projections.VerifyTest do
   test "flush: true is the default and drains before verifying" do
     # Without a running server, Server.flush/1 is a no-op that must not raise.
     assert %{drifts: []} = Verify.run(Usage)
+  end
+
+  describe "compare/3" do
+    test "reports a row present on one side only with :__row__", %{practice_id: practice_id} do
+      grain = %{practice_id: practice_id, billing_period_start: ~D[2026-09-01]}
+
+      # Row only on the "live" (second) side.
+      PracticeUsageStats
+      |> Ash.Changeset.for_create(:upsert_grain, grain, authorize?: false)
+      |> Ash.create!(authorize?: false)
+      |> Ash.update!(%{ops: [{:increment, :notes_count, 2}]},
+        action: :apply_projection_ops,
+        authorize?: false
+      )
+
+      result = Verify.compare(UsageV2, Usage, flush: false)
+
+      assert result.shadow == UsageV2.__projector_name__()
+      assert result.live == Usage.__projector_name__()
+      assert result.shadow_rows == 0
+      assert result.live_rows == 1
+
+      assert [%{grain: ^grain, field: :__row__, shadow: :missing, live: :present}] =
+               result.differences
+    end
+
+    test "compares only attributes both resources share", %{practice_id: practice_id} do
+      grain = %{practice_id: practice_id, billing_period_start: ~D[2026-09-01]}
+
+      for resource <- [PracticeUsageStats, PracticeUsageStatsV2] do
+        resource
+        |> Ash.Changeset.for_create(:upsert_grain, grain, authorize?: false)
+        |> Ash.create!(authorize?: false)
+        |> Ash.update!(%{ops: [{:increment, :notes_count, 2}]},
+          action: :apply_projection_ops,
+          authorize?: false
+        )
+      end
+
+      result = Verify.compare(UsageV2, Usage, flush: false)
+      assert result.differences == []
+    end
+
+    test "returns {:error, :grain_mismatch} for different grain fields" do
+      assert {:error, :grain_mismatch} = Verify.compare(Usage, UserLifetime, flush: false)
+    end
   end
 end
