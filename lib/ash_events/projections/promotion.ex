@@ -303,7 +303,10 @@ defmodule AshEvents.Projections.Promotion do
   # the promoted row :active with a version bump and the demoted row
   # :retired. The lock is keyed on the family so both directions of the
   # swap serialize.
-  defp swap(promoted_name, demoted_name, expected_promoted, expected_demoted) do
+  @doc false
+  # Public only so tests can drive the in-lock status re-check directly.
+  @spec swap(String.t(), String.t(), atom(), atom()) :: :ok | {:error, term()}
+  def swap(promoted_name, demoted_name, expected_promoted, expected_demoted) do
     Config.repo().transaction(fn ->
       Config.repo().query!("SELECT pg_advisory_xact_lock($1)", [
         Rebuilder.lock_key(family(promoted_name))
@@ -332,10 +335,10 @@ defmodule AshEvents.Projections.Promotion do
         row
 
       {:ok, %{status: other}} ->
-        Config.repo().rollback({:error, {:unexpected_status, name, other}})
+        Config.repo().rollback({:unexpected_status, name, other})
 
       _ ->
-        Config.repo().rollback({:error, {:unexpected_status, name, nil}})
+        Config.repo().rollback({:unexpected_status, name, nil})
     end
   end
 

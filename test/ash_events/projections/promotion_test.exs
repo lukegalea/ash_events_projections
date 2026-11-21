@@ -296,6 +296,24 @@ defmodule AshEvents.Projections.PromotionTest do
       assert registry_status(Usage.__projector_name__()) == :retired
     end
 
+    test "the in-lock status re-check refuses a stale swap and changes nothing", %{
+      practice_id: practice_id
+    } do
+      build_both!(practice_id)
+      assert {:ok, _} = Promotion.promote(UsageV2, Usage)
+
+      v1 = Usage.__projector_name__()
+      v2 = UsageV2.__projector_name__()
+
+      # A caller that read the registry before the promote still expects the
+      # old statuses; the swap must notice under the lock and roll back.
+      assert {:error, {:unexpected_status, ^v2, :active}} =
+               Promotion.swap(v2, v1, :shadow, :active)
+
+      assert registry_status(v2) == :active
+      assert registry_status(v1) == :retired
+    end
+
     test "rollback with wrong statuses is refused" do
       :ok = Promotion.build_shadow!(UsageV2)
       v2_name = UsageV2.__projector_name__()

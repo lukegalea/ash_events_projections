@@ -210,6 +210,26 @@ defmodule AshEvents.Projections.VerifyTest do
       assert result.differences == []
     end
 
+    test "reports a value on one side against nil on the other", %{practice_id: practice_id} do
+      grain = %{practice_id: practice_id, billing_period_start: ~D[2026-09-01]}
+      at = ~U[2026-09-02 10:00:00.000000Z]
+
+      for {resource, ops} <- [
+            {PracticeUsageStats, [{:increment, :notes_count, 1}, {:set, :last_activity_at, at}]},
+            {PracticeUsageStatsV2, [{:increment, :notes_count, 1}]}
+          ] do
+        resource
+        |> Ash.Changeset.for_create(:upsert_grain, grain, authorize?: false)
+        |> Ash.create!(authorize?: false)
+        |> Ash.update!(%{ops: ops}, action: :apply_projection_ops, authorize?: false)
+      end
+
+      result = Verify.compare(UsageV2, Usage, flush: false)
+
+      assert [%{grain: ^grain, field: :last_activity_at, shadow: nil, live: ^at}] =
+               result.differences
+    end
+
     test "returns {:error, :grain_mismatch} for different grain fields" do
       assert {:error, :grain_mismatch} = Verify.compare(Usage, UserLifetime, flush: false)
     end

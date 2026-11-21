@@ -176,10 +176,13 @@ defmodule AshEvents.Projections.Operations.Verify do
 
       {shadow_row, live_row} ->
         for field <- fields,
-            shadow_val = Map.get(shadow_row, field),
-            live_val = Map.get(live_row, field),
-            shadow_val != live_val do
-          %{grain: grain, field: field, shadow: shadow_val, live: live_val}
+            Map.get(shadow_row, field) != Map.get(live_row, field) do
+          %{
+            grain: grain,
+            field: field,
+            shadow: Map.get(shadow_row, field),
+            live: Map.get(live_row, field)
+          }
         end
     end
   end
