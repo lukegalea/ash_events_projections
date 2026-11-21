@@ -45,11 +45,15 @@ writes the config block and adds the supervisor.
   `Server.flush/1`, and after a rebuild, reset or bootstrap; there is no
   polling, so without it new events are not projected until one of those
   happens.
-- The engine reads the event table with schemaless queries that select
-  `id, practice_id, user_id, occurred_at, metadata, data, resource, action,
-  action_type`. The table must have a `practice_id` column as well as the
+- The engine reads the event table with schemaless queries that select the
+  configured partition column plus `id, user_id, occurred_at, metadata, data,
+  resource, action, action_type`. The table must have a partition column —
+  `practice_id` by default, configurable per projector with
+  `partition_column:` (e.g. `partition_column: :tenant_ref`) — as well as the
   AshEvents columns; `AshEvents.Projections.Events.Changes.ExtractMetadataFields`
-  can fill it from `metadata`.
+  can fill it from `metadata`. Handlers and grain functions receive the value
+  under the configured column name (`event.practice_id` or
+  `event.tenant_ref`).
 
 ## Defining a projection target
 
@@ -82,8 +86,10 @@ project MyApp.SomeResource, :some_action, fn event ->
 end
 ```
 
-- The `name` must be unique and SHOULD be versioned (`_v1`, `_v2`) so a future
-  rebuild can run side-by-side as a blue/green deploy.
+- The `name` must be unique and SHOULD be versioned (`_v1`, `_v2`). The
+  trailing `_v<digits>` suffix defines the projector's family, which lets a
+  rebuild run side-by-side as a shadow (`mix ash_events_projections.shadow`)
+  and be promoted atomically — see `AshEvents.Projections.Promotion`.
 - `event_log:` and `projection_resource:` are required `use` options; the
   `event_log` app config does not fill them in.
 - `grain` takes a function (event → grain map, or a bare value for a

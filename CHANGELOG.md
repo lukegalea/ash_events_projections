@@ -20,6 +20,13 @@ the API stabilizes.
 
 ### Added
 - Initial extraction from a production host app into a standalone Ash extension.
+- Shadow-then-promote rebuilds: `AshEvents.Projections.Promotion`
+  (`build_shadow!/1`, `promote/3`, `rollback/2`, `serving/2`, `family/1`),
+  `:shadow` and `:retired` registry statuses, `Verify.compare/3`, and the
+  `mix ash_events_projections.{shadow,promote}` tasks.
+- Configurable event-log partition column: `partition_column:` projector
+  option (default `:practice_id`), with the shared
+  `AshEvents.Projections.EventRow` reader.
 - `AshEvents.Projections.Projector` DSL for defining event-driven projectors with
   stateless and stateful handlers.
 - `AshEvents.Projections.ProjectionResource` Spark extension for declaring

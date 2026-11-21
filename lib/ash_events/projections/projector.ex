@@ -44,9 +44,18 @@ defmodule AshEvents.Projections.Projector do
   Both handler arities return ops in the same format, so `ApplyOpsChange` and
   the upsert/update machinery remain identical.
 
+  ## Partition column
+
+  The engine reads one partition column from the event log alongside the
+  AshEvents columns and passes its value to handlers and grain functions as
+  `event.practice_id` (the default). Pass `partition_column: :tenant_ref`
+  as a `use` option to fold events by a different column; the event map
+  then carries `event.tenant_ref` instead and has no `:practice_id` key.
+
   ## Generated API
 
       MyProjector.__projector_name__()          # "my_projector_v1"
+      MyProjector.__partition_column__()        # :practice_id (default)
       MyProjector.__grain__()                   # fn event -> grain_key end
       MyProjector.__handlers__()                # raw handler descriptors (introspection)
       MyProjector.handle_event(event)           # :skip | {:ok, ops}     (arity-1 handlers)
@@ -67,6 +76,11 @@ defmodule AshEvents.Projections.Projector do
       def __projector_name__, do: Keyword.fetch!(@projector_opts, :name)
       def __event_log__, do: Keyword.fetch!(@projector_opts, :event_log)
       def __projection_resource__, do: Keyword.fetch!(@projector_opts, :projection_resource)
+
+      # Event-log column this projector folds events by. Configurable per
+      # projector so a host is not tied to `practice_id`; the engine reads
+      # the column name from here.
+      def __partition_column__, do: Keyword.get(@projector_opts, :partition_column, :practice_id)
     end
   end
 

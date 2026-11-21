@@ -16,12 +16,14 @@ defmodule AshEvents.Projections.TestApp.Events.Event do
 
   attributes do
     attribute :practice_id, :uuid, public?: true
+    attribute :tenant_ref, :string, public?: true
   end
 
   changes do
     change {AshEvents.Projections.Events.Changes.ExtractMetadataFields,
             fields: [
               {:practice_id, cast: :uuid},
+              {:tenant_ref, cast: :string},
               {:user_id, cast: :uuid, overwrite?: false}
             ]},
            on: [:create]

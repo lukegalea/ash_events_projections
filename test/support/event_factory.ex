@@ -20,6 +20,7 @@ defmodule AshEvents.Projections.TestApp.EventFactory do
     * `:action_type` — :create | :update | :destroy (default: :create)
     * `:occurred_at` — NaiveDateTime/DateTime (default: now)
     * `:practice_id` — practice uuid placed in metadata (and the row column)
+    * `:tenant_ref` — tenant reference placed in metadata (and the row column)
     * `:user_id` — actor uuid (default: fresh uuid)
     * `:metadata` — extra metadata merged on top of the standard fields
     * `:data` — the event payload map
@@ -30,6 +31,7 @@ defmodule AshEvents.Projections.TestApp.EventFactory do
     metadata =
       %{"user_id" => user_id}
       |> maybe_put("practice_id", opts[:practice_id])
+      |> maybe_put("tenant_ref", opts[:tenant_ref])
       |> Map.merge(Enum.into(opts[:metadata] || %{}, %{}, fn {k, v} -> {to_string(k), v} end))
 
     Event

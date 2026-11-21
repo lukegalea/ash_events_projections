@@ -25,7 +25,7 @@ defmodule AshEvents.Projections.TimeTravel do
       %{care_cards_count: 7, client_emails_sent_count: 1, ...}
   """
 
-  alias AshEvents.Projections.Config
+  alias AshEvents.Projections.{Config, EventRow}
 
   import Ecto.Query
 
@@ -47,14 +47,15 @@ defmodule AshEvents.Projections.TimeTravel do
   def state_at(projector_module, grain_key, %NaiveDateTime{} = timestamp) do
     grain_fn = projector_module.__grain__()
     grain_fields = projector_module.__projection_resource__().__projection_grain_fields__()
+    partition_column = projector_module.__partition_column__()
 
     target_key = normalize_key(grain_key, grain_fields)
 
     Config.event_table()
-    |> select_columns()
+    |> EventRow.query(partition_column)
     |> where_before(timestamp)
     |> Config.repo().all()
-    |> Enum.map(&normalize/1)
+    |> Enum.map(&EventRow.normalize(&1, partition_column))
     |> Enum.filter(fn event ->
       case grain_fn.(event) do
         nil -> false
@@ -101,50 +102,7 @@ defmodule AshEvents.Projections.TimeTravel do
 
   defp normalize_key(scalar, [field]), do: %{field => scalar}
 
-  defp select_columns(table) do
-    from(e in table,
-      select: %{
-        id: e.id,
-        practice_id: e.practice_id,
-        user_id: e.user_id,
-        occurred_at: e.occurred_at,
-        metadata: e.metadata,
-        data: e.data,
-        resource: e.resource,
-        action: e.action,
-        action_type: e.action_type
-      },
-      order_by: [asc: e.id]
-    )
-  end
-
   defp where_before(query, timestamp) do
     from(e in query, where: e.occurred_at <= ^timestamp)
   end
-
-  defp normalize(row) do
-    %{
-      id: row.id,
-      practice_id: uuid_to_string(row.practice_id),
-      user_id: uuid_to_string(row.user_id),
-      occurred_at: row.occurred_at,
-      metadata: row.metadata || %{},
-      data: row.data || %{},
-      resource: to_atom(row.resource),
-      action: to_atom(row.action),
-      action_type: to_atom(row.action_type)
-    }
-  end
-
-  defp uuid_to_string(nil), do: nil
-
-  defp uuid_to_string(uuid) when is_binary(uuid) and byte_size(uuid) == 16 do
-    {:ok, s} = Ecto.UUID.load(uuid)
-    s
-  end
-
-  defp uuid_to_string(uuid), do: uuid
-
-  defp to_atom(s) when is_binary(s), do: String.to_atom(s)
-  defp to_atom(a) when is_atom(a), do: a
 end

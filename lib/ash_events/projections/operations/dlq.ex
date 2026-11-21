@@ -25,7 +25,7 @@ defmodule AshEvents.Projections.Operations.Dlq do
 
   """
 
-  alias AshEvents.Projections.{Config, DeadLetter, Server}
+  alias AshEvents.Projections.{Config, DeadLetter, EventRow, Server}
 
   import Ecto.Query
 
@@ -67,7 +67,9 @@ defmodule AshEvents.Projections.Operations.Dlq do
   end
 
   defp replay_row(projector_module, dlq, name, acc) do
-    case load_event(dlq.event_id) do
+    partition_column = projector_module.__partition_column__()
+
+    case load_event(dlq.event_id, partition_column) do
       nil ->
         DeadLetter.mark_purged(dlq)
         %{acc | skipped: acc.skipped + 1}
@@ -119,25 +121,15 @@ defmodule AshEvents.Projections.Operations.Dlq do
   defp filter_by_ids(query, []), do: query
   defp filter_by_ids(query, ids), do: Ash.Query.filter(query, event_id in ^ids)
 
-  defp load_event(id) do
-    row =
-      from(e in Config.event_table(),
-        select: %{
-          id: e.id,
-          practice_id: e.practice_id,
-          user_id: e.user_id,
-          occurred_at: e.occurred_at,
-          metadata: e.metadata,
-          data: e.data,
-          resource: e.resource,
-          action: e.action,
-          action_type: e.action_type
-        },
-        where: e.id == ^id
-      )
-      |> Config.repo().one()
-
-    if row, do: normalize(row), else: nil
+  defp load_event(id, partition_column) do
+    Config.event_table()
+    |> EventRow.query(partition_column)
+    |> where([e], e.id == ^id)
+    |> Config.repo().one()
+    |> case do
+      nil -> nil
+      row -> EventRow.normalize(row, partition_column)
+    end
   end
 
   defp attempt_replay(projector_module, event) do
@@ -186,30 +178,4 @@ defmodule AshEvents.Projections.Operations.Dlq do
     [field] = resource.__projection_grain_fields__()
     Ash.create!(resource, %{field => grain_key}, action: :upsert_grain, authorize?: false)
   end
-
-  defp normalize(row) do
-    %{
-      id: row.id,
-      practice_id: uuid_to_string(row.practice_id),
-      user_id: uuid_to_string(row.user_id),
-      occurred_at: row.occurred_at,
-      metadata: row.metadata || %{},
-      data: row.data || %{},
-      resource: to_atom(row.resource),
-      action: to_atom(row.action),
-      action_type: to_atom(row.action_type)
-    }
-  end
-
-  defp uuid_to_string(nil), do: nil
-
-  defp uuid_to_string(uuid) when is_binary(uuid) and byte_size(uuid) == 16 do
-    {:ok, s} = Ecto.UUID.load(uuid)
-    s
-  end
-
-  defp uuid_to_string(uuid), do: uuid
-
-  defp to_atom(s) when is_binary(s), do: String.to_atom(s)
-  defp to_atom(a) when is_atom(a), do: a
 end

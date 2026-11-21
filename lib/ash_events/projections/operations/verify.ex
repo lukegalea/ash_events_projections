@@ -22,9 +22,8 @@ defmodule AshEvents.Projections.Operations.Verify do
 
   """
 
-  alias AshEvents.Projections.{Config, Server}
-
-  import Ecto.Query
+  alias Ash.Resource.Info
+  alias AshEvents.Projections.{Config, EventRow, Server}
 
   @type drift :: %{
           projection_name: String.t(),
@@ -39,6 +38,21 @@ defmodule AshEvents.Projections.Operations.Verify do
           checked_rows: non_neg_integer(),
           expected_rows: non_neg_integer(),
           drifts: [drift()]
+        }
+
+  @type difference :: %{
+          grain: map(),
+          field: atom(),
+          shadow: term(),
+          live: term()
+        }
+
+  @type comparison :: %{
+          shadow: String.t(),
+          live: String.t(),
+          shadow_rows: non_neg_integer(),
+          live_rows: non_neg_integer(),
+          differences: [difference()]
         }
 
   @doc """
@@ -76,16 +90,114 @@ defmodule AshEvents.Projections.Operations.Verify do
     |> Enum.map(&run(&1, opts))
   end
 
+  @doc """
+  Compares a shadow projection table against the live one, row by row.
+
+  Options:
+
+    * `:flush` — when `true` (default), calls `Server.flush/1` on both
+      projectors before snapshotting.
+
+  Both projection resources must declare the same `__projection_grain_fields__`,
+  else `{:error, :grain_mismatch}`. The comparison covers the attributes both
+  resources share, excluding `:id`, `:inserted_at` and `:updated_at`. A grain
+  present on one side only is one difference with `field: :__row__` and
+  `:present`/`:missing` values.
+  """
+  @spec compare(module(), module(), keyword()) :: comparison() | {:error, :grain_mismatch}
+  def compare(shadow_module, live_module, opts \\ []) do
+    shadow_name = shadow_module.__projector_name__()
+    live_name = live_module.__projector_name__()
+
+    if Keyword.get(opts, :flush, true) do
+      Server.flush(shadow_name)
+      Server.flush(live_name)
+    end
+
+    shadow_fields = shadow_module.__projection_resource__().__projection_grain_fields__()
+    live_fields = live_module.__projection_resource__().__projection_grain_fields__()
+
+    if shadow_fields != live_fields do
+      {:error, :grain_mismatch}
+    else
+      shadow_rows = load_projection_rows(shadow_module)
+      live_rows = load_projection_rows(live_module)
+
+      shared_fields =
+        shared_attributes(
+          shadow_module.__projection_resource__(),
+          live_module.__projection_resource__()
+        )
+
+      %{
+        shadow: shadow_name,
+        live: live_name,
+        shadow_rows: map_size(shadow_rows),
+        live_rows: map_size(live_rows),
+        differences: diff_tables(shadow_rows, live_rows, shared_fields)
+      }
+    end
+  end
+
+  # --- Table comparison (shadow vs live) ---
+
+  # Attributes both resources declare, minus the surrogate key and the
+  # timestamps: those always differ between two physically separate tables.
+  defp shared_attributes(shadow_resource, live_resource) do
+    excluded = [:id, :inserted_at, :updated_at]
+
+    shadow_names =
+      shadow_resource
+      |> Info.attributes()
+      |> Enum.map(& &1.name)
+
+    live_resource
+    |> Info.attributes()
+    |> Enum.map(& &1.name)
+    |> MapSet.new()
+    |> MapSet.intersection(MapSet.new(shadow_names))
+    |> MapSet.difference(MapSet.new(excluded))
+    |> MapSet.to_list()
+  end
+
+  defp diff_tables(shadow_rows, live_rows, fields) do
+    (Map.keys(shadow_rows) ++ Map.keys(live_rows))
+    |> Enum.uniq()
+    |> Enum.flat_map(&diff_grain_pair(&1, shadow_rows, live_rows, fields))
+  end
+
+  defp diff_grain_pair(grain, shadow_rows, live_rows, fields) do
+    case {Map.get(shadow_rows, grain), Map.get(live_rows, grain)} do
+      {_shadow_row, nil} ->
+        [%{grain: grain, field: :__row__, shadow: :present, live: :missing}]
+
+      {nil, _live_row} ->
+        [%{grain: grain, field: :__row__, shadow: :missing, live: :present}]
+
+      {shadow_row, live_row} ->
+        for field <- fields,
+            Map.get(shadow_row, field) != Map.get(live_row, field) do
+          %{
+            grain: grain,
+            field: field,
+            shadow: Map.get(shadow_row, field),
+            live: Map.get(live_row, field)
+          }
+        end
+    end
+  end
+
   # --- Recompute ---
 
   defp recompute(projector_module) do
     grain_fn = projector_module.__grain__()
     grain_fields = projector_module.__projection_resource__().__projection_grain_fields__()
+    partition_column = projector_module.__partition_column__()
 
     Config.event_table()
-    |> select_all_event_columns()
+    |> EventRow.query(partition_column)
     |> Config.repo().all()
-    |> Enum.map(&normalize/1)
+    |> Enum.map(&EventRow.normalize(&1, partition_column))
     |> Enum.reduce(%{}, fn event, acc ->
       fold_event(projector_module, grain_fn, grain_fields, event, acc)
     end)
@@ -234,50 +346,4 @@ defmodule AshEvents.Projections.Operations.Verify do
       is_integer(v) && v != 0
     end)
   end
-
-  # --- Event loading ---
-
-  defp select_all_event_columns(table) do
-    from(e in table,
-      select: %{
-        id: e.id,
-        practice_id: e.practice_id,
-        user_id: e.user_id,
-        occurred_at: e.occurred_at,
-        metadata: e.metadata,
-        data: e.data,
-        resource: e.resource,
-        action: e.action,
-        action_type: e.action_type
-      },
-      order_by: [asc: e.id]
-    )
-  end
-
-  defp normalize(row) do
-    %{
-      id: row.id,
-      practice_id: uuid_to_string(row.practice_id),
-      user_id: uuid_to_string(row.user_id),
-      occurred_at: row.occurred_at,
-      metadata: row.metadata || %{},
-      data: row.data || %{},
-      resource: to_atom(row.resource),
-      action: to_atom(row.action),
-      action_type: to_atom(row.action_type)
-    }
-  end
-
-  defp uuid_to_string(nil), do: nil
-
-  defp uuid_to_string(uuid) when is_binary(uuid) and byte_size(uuid) == 16 do
-    {:ok, s} = Ecto.UUID.load(uuid)
-    s
-  end
-
-  defp uuid_to_string(uuid), do: uuid
-
-  # Use to_existing_atom/1 — see AshEvents.Projections.Server.to_atom/1.
-  defp to_atom(s) when is_binary(s), do: String.to_existing_atom(s)
-  defp to_atom(a) when is_atom(a), do: a
 end

@@ -81,10 +81,12 @@ changes do
 end
 ```
 
-The engine reads the event table directly and selects a `practice_id` column
-alongside the AshEvents columns, so the event log resource needs a
-`practice_id` attribute (`AshEvents.Projections.Events.Changes.ExtractMetadataFields`
-can fill it from `metadata`).
+The engine reads the event table directly and selects a partition column
+alongside the AshEvents columns — `practice_id` by default, configurable per
+projector with `partition_column: :tenant_ref` — so the event log resource
+needs that attribute (`AshEvents.Projections.Events.Changes.ExtractMetadataFields`
+can fill it from `metadata`). Handlers and grain functions receive the value
+as `event.practice_id` (or `event.tenant_ref` when configured).
 
 ## 4. Define a projection target
 
