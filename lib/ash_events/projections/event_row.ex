@@ -26,6 +26,22 @@ defmodule AshEvents.Projections.EventRow do
 
   import Ecto.Query
 
+  @default_partition_column :practice_id
+
+  @doc """
+  The partition column of `projector`: its `__partition_column__/0`, or
+  `:practice_id` for a module that does not define one (a projector built by
+  a wrapper macro that predates the `partition_column:` option).
+  """
+  @spec partition_column(module()) :: atom()
+  def partition_column(projector) do
+    Code.ensure_loaded(projector)
+
+    if function_exported?(projector, :__partition_column__, 0),
+      do: projector.__partition_column__(),
+      else: @default_partition_column
+  end
+
   @doc """
   Returns the base event-log query: id, partition, user_id, occurred_at,
   metadata, data, resource, action, action_type — ordered by id asc.

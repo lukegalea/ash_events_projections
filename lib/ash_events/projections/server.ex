@@ -115,7 +115,7 @@ defmodule AshEvents.Projections.Server do
   defp do_drain(projector) do
     checkpoint = get_or_create_checkpoint(projector)
     after_id = checkpoint.last_seen_event_id || 0
-    partition_column = projector.__partition_column__()
+    partition_column = EventRow.partition_column(projector)
 
     batch =
       Config.event_table()

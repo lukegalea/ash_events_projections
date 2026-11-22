@@ -192,7 +192,7 @@ defmodule AshEvents.Projections.Operations.Verify do
   defp recompute(projector_module) do
     grain_fn = projector_module.__grain__()
     grain_fields = projector_module.__projection_resource__().__projection_grain_fields__()
-    partition_column = projector_module.__partition_column__()
+    partition_column = EventRow.partition_column(projector_module)
 
     Config.event_table()
     |> EventRow.query(partition_column)
