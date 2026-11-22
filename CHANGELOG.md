@@ -18,6 +18,11 @@ the API stabilizes.
 
 - Requires Elixir 1.20 or later.
 
+### Fixed
+- A projector module without `__partition_column__/0` (one built by a wrapper macro that
+  does not use `AshEvents.Projections.Projector`) reads `:practice_id` again instead of
+  crashing the server, `Verify`, `Dlq` and `TimeTravel`.
+
 ### Added
 - Initial extraction from a production host app into a standalone Ash extension.
 - Shadow-then-promote rebuilds: `AshEvents.Projections.Promotion`

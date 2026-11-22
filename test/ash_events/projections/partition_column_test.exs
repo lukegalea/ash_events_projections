@@ -29,6 +29,21 @@ defmodule AshEvents.Projections.PartitionColumnTest do
     {:ok, practice_id: Ecto.UUID.generate()}
   end
 
+  describe "a projector module without __partition_column__/0" do
+    defmodule HandRolled do
+      @moduledoc false
+      def __projector_name__, do: "hand_rolled"
+    end
+
+    test "reads the default column; a declared one still wins" do
+      refute function_exported?(HandRolled, :__partition_column__, 0)
+
+      assert EventRow.partition_column(HandRolled) == :practice_id
+      assert EventRow.partition_column(Usage) == :practice_id
+      assert EventRow.partition_column(TenantUsage) == :tenant_ref
+    end
+  end
+
   describe "default partition column" do
     test "the default projector still receives event.practice_id", %{practice_id: practice_id} do
       start_supervised!({Server, Usage})

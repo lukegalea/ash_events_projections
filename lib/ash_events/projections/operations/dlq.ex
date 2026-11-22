@@ -67,7 +67,7 @@ defmodule AshEvents.Projections.Operations.Dlq do
   end
 
   defp replay_row(projector_module, dlq, name, acc) do
-    partition_column = projector_module.__partition_column__()
+    partition_column = EventRow.partition_column(projector_module)
 
     case load_event(dlq.event_id, partition_column) do
       nil ->

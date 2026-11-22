@@ -47,7 +47,7 @@ defmodule AshEvents.Projections.TimeTravel do
   def state_at(projector_module, grain_key, %NaiveDateTime{} = timestamp) do
     grain_fn = projector_module.__grain__()
     grain_fields = projector_module.__projection_resource__().__projection_grain_fields__()
-    partition_column = projector_module.__partition_column__()
+    partition_column = EventRow.partition_column(projector_module)
 
     target_key = normalize_key(grain_key, grain_fields)
 
