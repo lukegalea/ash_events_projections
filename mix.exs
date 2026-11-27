@@ -180,6 +180,11 @@ defmodule AshEvents.Projections.MixProject do
       {:postgrex, ">= 0.0.0"},
       {:ex_doc, "~> 0.37", only: [:dev], runtime: false},
       {:ex_check, "~> 0.16", only: [:dev, :test]},
+      # Dev-and-test-only: the laws judge (`mix ash_agent.laws`), run by
+      # scripts/iron-laws.sh in CI. runtime: false keeps it out of consumers'
+      # dependency graphs.
+      {:ash_agent_tools,
+       github: "lukegalea/ash_agent_tools", only: [:dev, :test], runtime: false},
       {:credo, ">= 0.0.0", only: [:dev, :test], runtime: false},
       {:dialyxir, ">= 0.0.0", only: [:dev, :test], runtime: false},
       {:sobelow, ">= 0.0.0", only: [:dev, :test], runtime: false},

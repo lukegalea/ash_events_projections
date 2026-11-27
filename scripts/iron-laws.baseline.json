@@ -1,0 +1,80 @@
+[
+  {
+    "law": "10",
+    "file": "lib/ash_events/projections/projector.ex",
+    "text": "String.to_atom(str)",
+    "reason": "Reviewed 2026-11-26: the macro turns names written in the host's own source into atoms at compile time; no runtime input reaches it."
+  },
+  {
+    "law": "10",
+    "file": "lib/ash_events/projections/projector.ex",
+    "text": "defp to_action_atom(name) when is_binary(name), do: String.to_atom(name)",
+    "reason": "Reviewed 2026-11-26: the macro turns names written in the host's own source into atoms at compile time; no runtime input reaches it."
+  },
+  {
+    "law": "11",
+    "file": "lib/ash_events/projections/projector.ex",
+    "text": "def handle_event(_event), do: :skip",
+    "reason": "Reviewed 2026-11-26, false positive: handle_event/1 is a projector callback, not a Phoenix LiveView event."
+  },
+  {
+    "law": "23",
+    "file": "lib/mix/tasks/ash_events_projections.bootstrap.ex",
+    "text": "@requirements [\"app.start\"]",
+    "reason": "Baselined unreviewed on 2026-11-26: the task starts the whole application. Narrowing it to app.config plus ensure_started of what it uses is a follow-up."
+  },
+  {
+    "law": "23",
+    "file": "lib/mix/tasks/ash_events_projections.dlq.ex",
+    "text": "@requirements [\"app.start\"]",
+    "reason": "Baselined unreviewed on 2026-11-26: the task starts the whole application. Narrowing it to app.config plus ensure_started of what it uses is a follow-up."
+  },
+  {
+    "law": "23",
+    "file": "lib/mix/tasks/ash_events_projections.event_growth.ex",
+    "text": "@requirements [\"app.start\"]",
+    "reason": "Baselined unreviewed on 2026-11-26: the task starts the whole application. Narrowing it to app.config plus ensure_started of what it uses is a follow-up."
+  },
+  {
+    "law": "23",
+    "file": "lib/mix/tasks/ash_events_projections.gaps.ex",
+    "text": "@requirements [\"app.start\"]",
+    "reason": "Baselined unreviewed on 2026-11-26: the task starts the whole application. Narrowing it to app.config plus ensure_started of what it uses is a follow-up."
+  },
+  {
+    "law": "23",
+    "file": "lib/mix/tasks/ash_events_projections.lag.ex",
+    "text": "@requirements [\"app.start\"]",
+    "reason": "Baselined unreviewed on 2026-11-26: the task starts the whole application. Narrowing it to app.config plus ensure_started of what it uses is a follow-up."
+  },
+  {
+    "law": "23",
+    "file": "lib/mix/tasks/ash_events_projections.promote.ex",
+    "text": "@requirements [\"app.start\"]",
+    "reason": "Baselined unreviewed on 2026-11-26: the task starts the whole application. Narrowing it to app.config plus ensure_started of what it uses is a follow-up."
+  },
+  {
+    "law": "23",
+    "file": "lib/mix/tasks/ash_events_projections.rebuild.ex",
+    "text": "@requirements [\"app.start\"]",
+    "reason": "Baselined unreviewed on 2026-11-26: the task starts the whole application. Narrowing it to app.config plus ensure_started of what it uses is a follow-up."
+  },
+  {
+    "law": "23",
+    "file": "lib/mix/tasks/ash_events_projections.reset.ex",
+    "text": "@requirements [\"app.start\"]",
+    "reason": "Baselined unreviewed on 2026-11-26: the task starts the whole application. Narrowing it to app.config plus ensure_started of what it uses is a follow-up."
+  },
+  {
+    "law": "23",
+    "file": "lib/mix/tasks/ash_events_projections.shadow.ex",
+    "text": "@requirements [\"app.start\"]",
+    "reason": "Baselined unreviewed on 2026-11-26: the task starts the whole application. Narrowing it to app.config plus ensure_started of what it uses is a follow-up."
+  },
+  {
+    "law": "23",
+    "file": "lib/mix/tasks/ash_events_projections.verify.ex",
+    "text": "@requirements [\"app.start\"]",
+    "reason": "Baselined unreviewed on 2026-11-26: the task starts the whole application. Narrowing it to app.config plus ensure_started of what it uses is a follow-up."
+  }
+]
